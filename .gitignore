@@ -1,0 +1,5 @@
+.env
+out/
+logs/
+tcrs-out/
+*.jar
