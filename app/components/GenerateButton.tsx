@@ -29,7 +29,7 @@ export function GenerateButton({
     <>
       <h2>Regenerate</h2>
       <p className="muted small">
-        ~8 minutes, 54 logins. One run per {cooldown.hours}h.
+        ~8 minutes, 54 logins. One run per {cooldown.policyHours}h.
         {running && " A run is already in progress."}
         {cooldown.reason === "misconfigured" &&
           " Server is misconfigured. Unavailable."}

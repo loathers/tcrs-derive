@@ -55,6 +55,13 @@ export interface CooldownConfig {
 }
 
 export interface CooldownInfo {
+  /**
+   * The configured policy, always. Distinct from `hours`, which is the window
+   * that happens to apply to the LAST outcome and can legitimately be 0 (a run
+   * aborted in its first few minutes is treated as never having happened). The
+   * UI wants the policy for "one run per Xh", not the momentary window.
+   */
+  policyHours: number;
   hours: number;
   nextAllowedAt: string | null;
   remainingMs: number;
@@ -180,9 +187,12 @@ export class Store {
    */
   cooldownInfo(): CooldownInfo {
     const last = this.lastAttempt;
+    const policyHours = this.#cooldown.successHours;
+
     if (last === null) {
       return {
-        hours: this.#cooldown.successHours,
+        policyHours,
+        hours: policyHours,
         nextAllowedAt: null,
         remainingMs: 0,
         canGenerate: true,
@@ -191,13 +201,20 @@ export class Store {
 
     const hours = hoursFor(last.outcome, this.#cooldown);
     if (hours === 0) {
-      return { hours: 0, nextAllowedAt: null, remainingMs: 0, canGenerate: true };
+      return {
+        policyHours,
+        hours: 0,
+        nextAllowedAt: null,
+        remainingMs: 0,
+        canGenerate: true,
+      };
     }
 
     const started = Date.parse(last.startedAt);
     const nextAllowed = started + hours * 3_600_000;
     const remainingMs = Math.max(0, nextAllowed - this.#now());
     return {
+      policyHours,
       hours,
       nextAllowedAt: new Date(nextAllowed).toISOString(),
       remainingMs,
