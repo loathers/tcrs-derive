@@ -25,6 +25,16 @@ body {
 h1 {
   font-size: 1.6em;
   margin: 0 0 0.2em;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+/* 30px pixel art. Let it scale without smoothing. */
+h1 img {
+  image-rendering: pixelated;
+  width: 1.2em;
+  height: 1.2em;
 }
 h2 {
   font-size: 1.15em;

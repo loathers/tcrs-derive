@@ -10,13 +10,10 @@ export function DownloadTable({
 }) {
   return (
     <div className="downloads">
-      {files.groups.map((group, i) => (
-        <ClassSection
-          key={group.classToken}
-          group={group}
-          open={i === 0}
-          stale={stale}
-        />
+      {/* All collapsed: 54 rows of links is a wall, and the reader knows which
+          class they want. */}
+      {files.groups.map((group) => (
+        <ClassSection key={group.classToken} group={group} stale={stale} />
       ))}
     </div>
   );

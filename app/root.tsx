@@ -19,6 +19,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           name="description"
           content="Downloadable KoLmafia Two Crazy Random Summer item-modifier data for every class and zodiac sign."
         />
+        <link rel="icon" type="image/png" href="/favicon.png" />
         <Meta />
         <Links />
       </head>

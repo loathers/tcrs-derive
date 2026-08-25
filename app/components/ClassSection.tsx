@@ -12,16 +12,14 @@ import { Badge } from "./Badge.tsx";
  */
 export function ClassSection({
   group,
-  open,
   stale,
 }: {
   group: ClassGroup;
-  open: boolean;
   stale: readonly string[];
 }) {
   const staleSet = new Set(stale);
   return (
-    <details className="class-section" open={open}>
+    <details className="class-section">
       <summary>
         {group.classLabel}
       </summary>

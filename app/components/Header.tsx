@@ -9,7 +9,10 @@ export function Header({
 }) {
   return (
     <header>
-      <h1>TCRS data</h1>
+      <h1>
+        <img src="/favicon.png" alt="" width={32} height={32} />
+        TCRS data
+      </h1>
       <p>
         KoLmafia TCRS item modifiers for all {permutationCount} class &times;
         sign combinations.

@@ -88,7 +88,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       {/* One section, two bodies. While a run is happening the progress replaces
           the controls rather than appearing below them. */}
       {status.run !== null ? (
-        <ProgressPanel run={status.run} />
+        <ProgressPanel run={status.run} dev={status.dev} />
       ) : (
         <GenerateButton
           cooldown={status.cooldown}

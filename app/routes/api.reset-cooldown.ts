@@ -9,13 +9,10 @@
  * Clears the attempt history only. The published dataset is untouched.
  */
 import type { Route } from "./+types/api.reset-cooldown";
-
-function isDev(): boolean {
-  return process.env["NODE_ENV"] !== "production";
-}
+import { requireDev } from "#server/dev.server";
 
 export async function action({ request }: Route.ActionArgs) {
-  if (!isDev()) throw new Response("Not found", { status: 404 });
+  requireDev();
 
   if (request.method !== "POST") {
     return Response.json(
@@ -35,7 +32,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export function loader() {
-  if (!isDev()) throw new Response("Not found", { status: 404 });
+  requireDev();
   return Response.json(
     { error: "use POST to reset the cooldown" },
     { status: 405, headers: { allow: "POST" } },
