@@ -402,11 +402,11 @@ describe("cancelling a run", () => {
   });
 
   it("requests cancellation synchronously, so it cannot race a finishing run", async () => {
-    // cancel() must decide against #active before its first await; otherwise two
+    // cancel() must decide against #active before its first await. Otherwise two
     // callers, or a caller racing natural completion, could both act.
     const { manager: m } = await manager({ only: ["at_blender"] });
     const started = m.trigger();
-    // Both are issued before either resolves; the cancel is requested
+    // Both are issued before either resolves. The cancel is requested
     // synchronously, so neither can act on a run the other already tore down.
     const [first, second] = await Promise.all([m.cancel(), m.cancel()]);
     const expected = started.accepted ? started.runId : "";

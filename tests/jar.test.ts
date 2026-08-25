@@ -20,7 +20,7 @@ afterEach(async () => {
  *
  * Every JVM is spawned with cwd set to its own private work dir. A relative
  * `-jar KoLmafia.jar` is therefore resolved against THAT directory, so all 54
- * permutations died instantly with "unable to open file KoLmafia.jar" — a run that
+ * permutations died instantly with "unable to open file KoLmafia.jar", a run that
  * failed in under a second and looked like a KoL problem.
  *
  * The original tests all passed absolute paths, which is exactly why they missed it.

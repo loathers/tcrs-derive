@@ -23,7 +23,7 @@ import { passwordVarFor, type Permutation } from "./permutations.ts";
 /**
  * Minimal `.env` parser. ~20 lines, and deliberately not `dotenv` or
  * `process.loadEnvFile()`: both mutate process.env, which is precisely what we are
- * trying to avoid. No variable interpolation — we do not want it.
+ * trying to avoid. No variable interpolation, we do not want it.
  */
 export function parseDotenv(text: string): Map<string, string> {
   const out = new Map<string, string>();
@@ -90,7 +90,7 @@ export function loadSecrets(o: LoadSecretsOptions = {}): SecretStore {
       if (k.startsWith("PASSWORD_") && v !== "") secrets.set(k, v);
     }
   } catch {
-    // No .env is normal in production; secrets come from the environment.
+    // No .env is normal in production. Secrets come from the environment.
   }
 
   // 2. The real environment wins, so a Coolify-set value overrides a stale .env.
@@ -127,7 +127,7 @@ export function loadSecrets(o: LoadSecretsOptions = {}): SecretStore {
 
 /**
  * The environment handed to each KoLmafia JVM. Explicit allow-list, never a spread
- * of process.env — see the file header.
+ * of process.env, see the file header.
  *
  * JAVA_HOME matters in the container (the JRE is copied from eclipse-temurin into
  * /opt/java/openjdk). TZ and LANG keep mafia's date and text handling predictable.

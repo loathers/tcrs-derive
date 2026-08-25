@@ -2,7 +2,7 @@
  * A source of RunState, so `tcrs run` and `tcrs attach` render the IDENTICAL App.
  *
  * remoteSource applies the same reduceRunState as the local runner and as the
- * browser — the working proof that the reducer is platform-free.
+ * browser, the working proof that the reducer is platform-free.
  */
 
 import type { RunEvent } from "#core/events";
@@ -42,8 +42,8 @@ export interface RemoteSourceOptions {
 /**
  * Drive the UI from the server's SSE stream.
  *
- * Every connection begins with a full `snapshot`, so a late joiner — or a
- * reconnect — is correct immediately without any replay buffer on the server.
+ * Every connection begins with a full `snapshot`, so a late joiner, or a
+ * reconnect, is correct immediately without any replay buffer on the server.
  */
 export function remoteSource(o: RemoteSourceOptions): StateSource & {
   start(): Promise<void>;

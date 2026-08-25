@@ -115,7 +115,7 @@ describe("row status strings match the bash printf formats", () => {
   });
 
   it("appends the try suffix from attempt 2 onwards", () => {
-    // run-all.sh:187 — only shown when the attempt number exceeds 1.
+    // run-all.sh:187, only shown when the attempt number exceeds 1.
     const items: PermStatus = {
       kind: "deriving",
       phase: "items",

@@ -2,7 +2,7 @@
  * The whole site.
  *
  * The loader supplies status + the file listing SERVER-SIDE, so the first paint
- * already shows the correct last-generated time, cooldown and download table — no
+ * already shows the correct last-generated time, cooldown and download table, no
  * spinner, no client fetch on load.
  *
  * The action triggers a run. Being a real form post, it works without JavaScript
@@ -49,7 +49,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher<GenerateResponse>();
   const revalidator = useRevalidator();
 
-  // The stream owns live state; the loader owns the initial paint.
+  // The stream owns live state. The loader owns the initial paint.
   const { status, connection } = useRunStream(loaderData.status);
 
   // When a run finishes, refresh the loader so the download table and the

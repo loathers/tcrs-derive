@@ -61,7 +61,7 @@ describe("isDeriveComplete on real fixtures", () => {
 describe("the tolerance boundary", () => {
   it("defaults to 150, which must exceed mafia's 100-item announce step", () => {
     expect(COMPLETE_TOLERANCE).toBe(150);
-    // The last line mafia emits is always Progress: 12001/12070 — exactly 69
+    // The last line mafia emits is always Progress: 12001/12070, exactly 69
     // short. The comparison is inclusive, so 69 is the smallest tolerance that
     // still accepts a real successful run; 68 rejects all 54 of them.
     expect(isDeriveComplete(atProgress(12001), 68)).toBe(false);
@@ -97,7 +97,7 @@ describe("progress is scoped to the items phase", () => {
 
   it("clears the current-phase progress on a phase change", () => {
     // This is what makes a stale items percentage structurally impossible to
-    // render during a cafe phase — see state.ts / present.ts.
+    // render during a cafe phase, see state.ts / present.ts.
     const t = atProgress(12001);
     expect(t.progress).toEqual({ done: 12001, total: 12070 });
     t.accept("Deriving TCRS item adjustments for all cafe booze items...");
@@ -113,7 +113,7 @@ describe("progress is scoped to the items phase", () => {
 
   it("does not mark started on a cafe header alone", () => {
     // A cafe header without an items header should not count as "login worked and
-    // the real derive began" — STARTED_RE only matches the real-items header.
+    // the real derive began", STARTED_RE only matches the real-items header.
     const t = new DeriveTracker();
     t.accept("Deriving TCRS item adjustments for all cafe booze items...");
     expect(t.started).toBe(false);

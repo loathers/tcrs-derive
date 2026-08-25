@@ -1,10 +1,10 @@
 /**
  * The ink app. Renders a StateSource, so `tcrs run` and `tcrs attach` share this
- * component tree verbatim — the only difference is where the RunState comes from.
+ * component tree verbatim, the only difference is where the RunState comes from.
  *
  * What ink deletes relative to the bash: the cursor-up `\x1b[%dA` redraw, the
  * erase-to-EOL on every line, the fixed-frame-height contract, and the cursor
- * hide/show plus its EXIT trap — roughly 40 lines of ANSI arithmetic in
+ * hide/show plus its EXIT trap, roughly 40 lines of ANSI arithmetic in
  * run-all.sh:129-273. ink's reconciler diffs frames for us.
  */
 
@@ -73,11 +73,11 @@ export function App({ source }: { source: StateSource }) {
       {compact ? <CompactChart state={state} rows={rows - 2} /> : <Chart state={state} />}
       {cancelling && (
         <Text color="yellow">
-          Interrupted — stopping all permutations (Ctrl-C again to force)…
+          Interrupted, stopping all permutations (Ctrl-C again to force)…
         </Text>
       )}
       {source.connection === "lost" && (
-        <Text color="yellow">Connection lost — reconnecting…</Text>
+        <Text color="yellow">Connection lost, reconnecting…</Text>
       )}
     </Box>
   );

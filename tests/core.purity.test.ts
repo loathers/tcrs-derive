@@ -6,7 +6,7 @@ import { readFileSync, readdirSync } from "node:fs";
  *
  * React Router's Vite plugin strips `*.server.ts` from the client bundle, which
  * enforces this for the web app. This test additionally covers the ink CLI and the
- * tests themselves, which the plugin never sees — and it fails at test time with a
+ * tests themselves, which the plugin never sees, and it fails at test time with a
  * clear message rather than at build time with a bundler error.
  */
 const PURE_FILES = [
@@ -47,7 +47,7 @@ describe("core purity", () => {
   });
 
   it("has no Date.now or Math.random in the reducer or presenter", () => {
-    // The reducer takes all time from event.at; that is what makes
+    // The reducer takes all time from event.at. That is what makes
     // reduceAll(initial, capturedEvents) a pure, snapshot-testable function.
     for (const file of ["state.ts", "present.ts"]) {
       const code = readFileSync(`src/core/${file}`, "utf8")

@@ -15,8 +15,8 @@ and sign. For each account the tool logs in, runs `tcrs reset`, `tcrs derive`,
 54 × 3 = 162 files, about 50 MB. A full run takes roughly 8 minutes.
 
 The site lets anyone download the files (individually or as one zip), see when they
-were last generated, and request a regeneration once every 12 hours — watching the
-progress of whichever run is currently happening, whoever started it.
+were last generated, and request a regeneration once every 12 hours. Whoever is
+looking sees the progress of whichever run is happening, whoever started it.
 
 ## Two ways to run it
 
@@ -28,28 +28,28 @@ yarn tcrs list --check-env
 ```
 
 Both interfaces are thin layers over one shared core. In particular
-`src/core/state.ts` — the reducer that turns the event stream into progress — runs
+`src/core/state.ts`, the reducer that turns the event stream into progress, runs
 server-side, in the browser, *and* in the terminal, so the web page and the terminal
 chart cannot drift apart.
 
 ## Requirements
 
-- **Node 22+** (24 recommended; the server runs `server.ts` directly via Node's
+- **Node 22+** (24 recommended. The server runs `server.ts` directly via Node's
   built-in type stripping).
 - **A JVM (Java 21+)** on `PATH`, for KoLmafia itself.
 - Yarn 4 (`corepack enable`).
 
-No `curl`/`jq` needed any more — jar downloads use `fetch`.
+No `curl`/`jq` needed any more, jar downloads use `fetch`.
 
 ## Setup
 
 Each account has its own password variable, `PASSWORD_<CLASS>_<SIGN>` (e.g.
-`PASSWORD_TT_WALLABY`). Copy the template and fill them in — if the accounts share a
+`PASSWORD_TT_WALLABY`). Copy the template and fill them in, if the accounts share a
 password, set every line to the same value:
 
 ```sh
 cp .env.example .env
-# edit .env; if they share a password:  sed -i '' 's/=$/=thepassword/' .env
+# edit .env. If they share a password:  sed -i '' 's/=$/=thepassword/' .env
 ```
 
 `.env` is gitignored. Check it before a long run:
@@ -60,7 +60,7 @@ yarn tcrs list --check-env
 
 Unlike the old shell version you do **not** export these into your shell. They are
 read into memory and deliberately removed from `process.env`, and each JVM is spawned
-with an explicit minimal environment — see [Security](#security).
+with an explicit minimal environment, see [Security](#security).
 
 ## How it works
 
@@ -73,8 +73,7 @@ with an explicit minimal environment — see [Security](#security).
 - Login and commands go in on stdin: `username`, `password`, `no`, `no`,
   `tcrs reset`, `tcrs derive`, `tcrs save`, `exit`.
 - Progress comes from **reading each child's stdout directly**. The shell version
-  re-derived all state every 1.5 s by `tr | awk | grep`-ing 54 growing log files —
-  about 65,000 processes and 80 MB of re-reading per batch, just to draw bars.
+  re-derived all state every 1.5 s by `tr | awk | grep`-ing 54 growing log files, about 65,000 processes and 80 MB of re-reading per batch, just to draw bars.
 - A one-time warm-up populates a shared data template so common startup downloads
   aren't repeated 54 times.
 
@@ -101,7 +100,7 @@ of old and new data. Now the previous dataset is served untouched until the new 
 is complete.
 
 If a permutation fails, its files are **carried forward** from the previous run rather
-than disappearing — 53 fresh files plus one stale beats a broken link — and the site
+than disappearing, 53 fresh files plus one stale beats a broken link, and the site
 marks those rows `stale`. A run is only published if it covers at least as many
 permutations as the one before it.
 
@@ -109,7 +108,7 @@ permutations as the one before it.
 
 | Var | Default | Meaning |
 |-----|---------|---------|
-| `PASSWORD_<CLASS>_<SIGN>` | — (required) | Password for one account, e.g. `PASSWORD_TT_WALLABY`. |
+| `PASSWORD_<CLASS>_<SIGN>` |, (required) | Password for one account, e.g. `PASSWORD_TT_WALLABY`. |
 | `CONCURRENCY` | `3` | Permutations in parallel. Each is a full JVM and a login from one IP. |
 | `TIMEOUT` | `1800` | Per-account seconds before the JVM is killed. |
 | `LOGIN_TIMEOUT` | `180` | Seconds to wait for deriving to start before treating a login as stuck. |
@@ -118,14 +117,14 @@ permutations as the one before it.
 | `STALL_TIMEOUT` | (unset) | Kill a derive that reports no progress for this many seconds. |
 | `DATA_DIR` | `./data` | Data root (runs, state, scratch). |
 | `JAR` | `./KoLmafia.jar` | KoLmafia jar. |
-| `JAVA_OPTS` | — | Extra JVM flags, e.g. `-Xmx512m`. |
+| `JAVA_OPTS` |, | Extra JVM flags, e.g. `-Xmx512m`. |
 | `ONLY` / `EXCLUDE` | (unset) | Comma-separated permutation filters. |
 | `RESUME` | (unset) | `1` to skip permutations the published manifest records as complete. |
 | `COOLDOWN_HOURS` | `12` | Minimum gap between runs. |
 | `FAILED_COOLDOWN_HOURS` | `1` | Shorter gap after a run in which nothing succeeded. |
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | Web server bind. |
 
-Every one is also a CLI flag — `yarn tcrs run --help`.
+Every one is also a CLI flag, `yarn tcrs run --help`.
 
 ## Login retries
 
@@ -136,7 +135,7 @@ account would burn its full `TIMEOUT` doing nothing.
 
 Each permutation therefore:
 
-- **fails fast** — a connection timeout, or deriving not starting within
+- **fails fast**, a connection timeout, or deriving not starting within
   `LOGIN_TIMEOUT`, kills that attempt rather than waiting out `TIMEOUT`;
 - **retries** transient failures up to `MAX_ATTEMPTS` with growing backoff. A
   non-transient failure (e.g. the account genuinely isn't in a TCRS run) is *not*
@@ -197,20 +196,20 @@ Coolify settings that matter:
 |---|---|---|
 | **Persistent volume** | `/data` | Holds the dataset, the zip and `state.json`. **Without it every redeploy loses the data and the cooldown history.** |
 | Environment | the 54 `PASSWORD_*`, plus any overrides | Runtime, not build-time. |
-| Healthcheck | `GET /healthz` | Stays 200 *during* a run — an 8-minute derive is not unhealthy. |
+| Healthcheck | `GET /healthz` | Stays 200 *during* a run, an 8-minute derive is not unhealthy. |
 | **Deploy strategy** | **stop-then-start, not rolling** | See below. |
 | Stop grace period | **60s** | A run needs up to ~45s to abort cleanly and record itself; Docker's default is 10s. |
-| Memory | ≥4 GB | `CONCURRENCY=3` × ~400–500 MB per mafia JVM, plus Node. |
+| Memory | ≥4 GB | `CONCURRENCY=3` × ~400, 500 MB per mafia JVM, plus Node. |
 
 **Rolling deploys must be off.** They start the new container before stopping the old
 one, and both would mount the same `/data`. The single-instance lock means the new
-container exits with a clear message rather than corrupting anything — but that
+container exits with a clear message rather than corrupting anything, but that
 presents as a failed deploy. (The lock identifies its holder by hostname plus a
 heartbeat, not by pid, precisely because two containers have separate PID namespaces
 and a pid recorded by one is meaningless to the other.)
 
 **`tini` is the image ENTRYPOINT and that is not cosmetic.** Every JVM is spawned
-detached, so one that outlives its parent is reparented to PID 1 — and Node as PID 1
+detached, so one that outlives its parent is reparented to PID 1, and Node as PID 1
 does not reap children. They would accumulate as zombies across runs. `tini` reaps
 them and forwards signals.
 
@@ -229,9 +228,8 @@ between 900 and 9200 items, on all three attempts. Fixed by `r29183`.
 > **Apple Silicon note:** this applies to *local* Docker only. A containerised JVM
 > under Docker Desktop on Apple Silicon suffers pathologically slow first-TLS-handshake
 > times (tens of seconds per JVM, past KoLmafia's connect timeout), because Docker
-> Desktop runs a Linux VM. On a Linux x86-64 host — including the Coolify target —
-> Docker is namespaces with no VM and no such problem. For local development just run
-> `yarn dev` natively; there is no need for Docker at all.
+> Desktop runs a Linux VM. On a Linux x86-64 host, including the Coolify target, > Docker is namespaces with no VM and no such problem. For local development just run
+> `yarn dev` natively. There is no need for Docker at all.
 
 ## Tests
 
@@ -246,7 +244,7 @@ both watchdogs, process-group killing, partial-output discarding, retries and
 cancellation.
 
 The committed fixtures under `tests/fixtures/logs/` are real output from a successful
-54-permutation run, and several tests exist only because of what they revealed — for
+54-permutation run, and several tests exist only because of what they revealed, for
 example, `Error during session initialization` appears in **every successful run**, and
 `Unable to invoke no` appears 108 times, so a slightly-too-broad "does this look like
 an error?" pattern would burn all three retries on all 54 permutations.
@@ -256,6 +254,6 @@ an error?" pattern would burn all three retries on all 54 permutations.
 
 - `tcrs derive`/`save`/`reset` require the character to be in a TCRS run. An account
   that isn't shows "You are not in a Two Crazy Random Summer run" in its log and is
-  marked failed — and is *not* retried, since retrying cannot help.
+  marked failed, and is *not* retried, since retrying cannot help.
 - `tcrs derive` fetches every item's description from KoL, so each account takes a
-  while; the parallel fan-out is what keeps the whole batch tractable.
+  while. The parallel fan-out is what keeps the whole batch tractable.

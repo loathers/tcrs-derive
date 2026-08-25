@@ -2,7 +2,7 @@
  * The live status stream.
  *
  * THE PAYOFF OF THE PURE REDUCER: a `patch` event is folded with the core's own
- * reduceRunState — the very same function the server and the ink CLI use. The
+ * reduceRunState, the very same function the server and the ink CLI use. The
  * browser therefore has zero bespoke progress logic and cannot drift from the
  * terminal chart.
  */
@@ -67,7 +67,7 @@ export function useRunStream(initial: StatusResponse) {
   });
 
   // Buffer patches and flush on an animation frame. A burst from several
-  // concurrent JVMs would otherwise re-render 54 cells per event; only the folded
+  // concurrent JVMs would otherwise re-render 54 cells per event. Only the folded
   // state is kept, so a tab left open for a whole run has flat memory.
   const pending = useRef<ServerEvent[]>([]);
   const frame = useRef<number | null>(null);
@@ -122,7 +122,7 @@ export function useRunStream(initial: StatusResponse) {
       };
 
       source.onerror = () => {
-        // EventSource reconnects on its own; after several failures assume the
+        // EventSource reconnects on its own. After several failures assume the
         // stream is being blocked (a proxy eating text/event-stream) and poll.
         failures += 1;
         if (failures >= 3) {

@@ -1,8 +1,7 @@
 /**
  * Configuration defaults and env resolution. NODE-ONLY.
  *
- * Every default matches the bash (README's env-var table), except CONCURRENCY —
- * see the comment there.
+ * Every default matches the bash (README's env-var table), except CONCURRENCY, * see the comment there.
  */
 
 import type { BatchConfig } from "./runBatch.server.ts";
@@ -11,7 +10,7 @@ export const DEFAULTS = {
   /**
    * The bash defaulted to 4 and was run at 6. In a container a memory limit is a
    * HARD ceiling where a VPS's RAM is soft, and an OOM-killed JVM mid-derive costs
-   * a whole permutation — so default lower and let the operator raise it after
+   * a whole permutation, so default lower and let the operator raise it after
    * watching real RSS. The other constraint is unchanged: 54 logins from one IP.
    */
   concurrency: 3,

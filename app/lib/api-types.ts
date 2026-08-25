@@ -2,7 +2,7 @@
  * The API contract, shared by the server and the browser.
  *
  * Lives under app/ so the web bundle can `import type` it with no risk of pulling
- * server code in — every type here is erased at build time.
+ * server code in. Every type here is erased at build time.
  */
 
 import type { RunEvent } from "#core/events";
@@ -49,7 +49,7 @@ export interface StatusResponse {
   /** Server time, so the client can correct for a mis-set local clock. */
   now: string;
   configOk: boolean;
-  /** A count only — never which passwords are missing. */
+  /** A count only, never which passwords are missing. */
   missingPasswordCount: number;
   dataset: DatasetSummary | null;
   cooldown: CooldownInfo;
@@ -106,8 +106,9 @@ export interface FileListResponse {
  * Server-sent events.
  *
  * Every connection begins with a `snapshot`, including reconnects. That single
- * decision is what makes a late joiner correct — someone else may have started the
- * run — while letting the server keep no replay buffer and ignore Last-Event-ID.
+ * decision is what makes a late joiner correct, which matters because someone else
+ * may have started the run. It also lets the server keep no replay buffer and
+ * ignore Last-Event-ID entirely.
  */
 export type ServerEvent =
   | { type: "snapshot"; seq: number; status: StatusResponse; state: RunState | null }

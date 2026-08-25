@@ -36,7 +36,7 @@ export function Header({
 
       {connection === "polling" && (
         <p className="muted small">
-          Live updates blocked; polling every 5s.
+          Live updates blocked. Polling every 5s.
         </p>
       )}
     </header>

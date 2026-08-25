@@ -32,7 +32,7 @@ export function GenerateButton({
         ~8 minutes, 54 logins. One run per {cooldown.hours}h.
         {running && " A run is already in progress."}
         {cooldown.reason === "misconfigured" &&
-          " Server misconfigured; unavailable."}
+          " Server is misconfigured. Unavailable."}
         {cooldown.reason === "low-disk" && " Not enough free disk."}
       </p>
       <button

@@ -1,5 +1,5 @@
 /**
- * `tcrs list` — the 54 permutations, and optionally which passwords are missing.
+ * `tcrs list`, the 54 permutations, and optionally which passwords are missing.
  *
  * `--check-env` is the preflight the bash lacked: it discovered a missing password
  * inside run-one.sh:20, so one .env typo failed one permutation 40 minutes into a

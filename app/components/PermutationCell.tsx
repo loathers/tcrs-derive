@@ -9,7 +9,7 @@ import type { PermState } from "#core/state";
  */
 export function PermutationCell({ perm }: { perm: PermState }) {
   const view = rowView(perm);
-  const label = `${perm.classLabel} / ${perm.signCap} — ${view.status}`;
+  const label = `${perm.classLabel} / ${perm.signCap}, ${view.status}`;
 
   return (
     <div

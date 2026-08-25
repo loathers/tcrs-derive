@@ -2,14 +2,14 @@
  * Single-instance lock. NODE-ONLY.
  *
  * Replaces run-all.sh:42-48, which was
- * `[ -f "$LOCK" ] && kill -0 "$(cat "$LOCK")"` — a TOCTOU race, and PID-reuse-prone:
+ * `[ -f "$LOCK" ] && kill -0 "$(cat "$LOCK")"`, a TOCTOU race, and PID-reuse-prone:
  * a recycled pid made it refuse to start FOREVER.
  *
  * WHY THIS IS NOT JUST A PID FILE.
  * The lock protects a DATA DIRECTORY, and in production that directory is a Docker
  * volume that two containers can mount at once (a rolling deploy starts the new
  * container before stopping the old one). Each container has its OWN PID NAMESPACE,
- * so a pid recorded by one is meaningless to the other — pid 7 there is either
+ * so a pid recorded by one is meaningless to the other, pid 7 there is either
  * absent or an unrelated process here. A pure pid check therefore fails open, and
  * two servers would happily run batches against one volume.
  *
@@ -19,7 +19,7 @@
  *   - other hostname -> fall back to a HEARTBEAT: the holder touches the file's
  *     mtime periodically, and a lock that has gone quiet for STALE_MS is reclaimed.
  *
- * The create itself is `open(path, "wx")` — an atomic O_EXCL — so the acquisition
+ * The create itself is `open(path, "wx")`, an atomic O_EXCL, so the acquisition
  * is race-free regardless of which liveness rule applies.
  */
 
@@ -92,7 +92,7 @@ export async function acquireLock(
     }
   }
 
-  // Stale. Remove and retry once; if someone else wins that race, their create
+  // Stale. Remove and retry once. If someone else wins that race, their create
   // succeeds and ours throws LockHeldError rather than double-acquiring.
   await rm(path, { force: true });
   try {
@@ -151,7 +151,7 @@ function isAlive(pid: number): boolean {
     process.kill(pid, 0);
     return true;
   } catch (e) {
-    // EPERM means it exists but belongs to someone else — still alive.
+    // EPERM means it exists but belongs to someone else, still alive.
     return (e as NodeJS.ErrnoException).code === "EPERM";
   }
 }

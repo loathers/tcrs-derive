@@ -1,13 +1,12 @@
 /**
  * Per-permutation log files. NODE-ONLY.
  *
- * Consumes the LogChunk channel (deliberately NOT RunEvent — raw output is ~50k
+ * Consumes the LogChunk channel (deliberately NOT RunEvent, raw output is ~50k
  * high-churn lines per batch and has no business going through the reducer or out
  * to every connected browser).
  *
  * Logs live inside the run's own staging dir, so nothing is ever destructively
- * overwritten. run-all.sh:54 did `rm -f "$LOG_DIR"/*.log` at the START of a run —
- * wiping the previous run's logs precisely when you are re-running because
+ * overwritten. run-all.sh:54 did `rm -f "$LOG_DIR"/*.log` at the START of a run, * wiping the previous run's logs precisely when you are re-running because
  * something failed and you want them.
  */
 

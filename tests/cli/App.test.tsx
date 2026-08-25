@@ -55,7 +55,7 @@ describe("Chart", () => {
   });
 
   it("never shows a stale items percentage during a cafe phase", () => {
-    // The row went items -> cafe_booze; it must read "cafe booze", not "99% items".
+    // The row went items -> cafe_booze. It must read "cafe booze", not "99% items".
     const state = reduceAll(
       freshState(),
       stamp([
@@ -88,7 +88,7 @@ describe("CompactChart", () => {
     expect(lines[0]).toBe(
       "Overall: 1/54 done  (2 running, 1 failed, 50 queued)  [running only]",
     );
-    // Only the in-flight rows; no done/failed/queued rows.
+    // Only the in-flight rows. No done/failed/queued rows.
     expect(lines).toHaveLength(3);
     expect(lines.slice(1).map((l) => l.split(" ")[0])).toEqual([
       "sc_wallaby",

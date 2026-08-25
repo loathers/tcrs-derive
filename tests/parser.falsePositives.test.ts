@@ -17,7 +17,7 @@ import {
 const BENIGN_REAL_LINES = [
   // Present in 54/54 successful runs.
   "Error during session initialization",
-  // 108x across successful runs — this is why TRANSIENT_RE must keep
+  // 108x across successful runs, this is why TRANSIENT_RE must keep
   // `Unable to (establish|connect)` rather than a bare `Unable to`.
   "Unable to invoke no",
   " > Unable to invoke no",

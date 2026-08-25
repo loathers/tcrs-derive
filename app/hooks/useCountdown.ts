@@ -1,8 +1,8 @@
 /**
  * A once-a-second countdown to an ISO instant.
  *
- * SSR-SAFE BY CONSTRUCTION. The first render — on the server AND during client
- * hydration — returns `serverRemainingMs` verbatim, so both trees agree. Only after
+ * SSR-SAFE BY CONSTRUCTION. The first render, on the server AND during client
+ * hydration, returns `serverRemainingMs` verbatim, so both trees agree. Only after
  * mount does it start computing from the wall clock.
  *
  * Doing it the obvious way (compute from Date.now() during render) produced a real
@@ -20,7 +20,7 @@ export function useCountdown(
   serverNowIso: string,
   serverRemainingMs: number,
 ): number {
-  // Identical on server and on first client render — this is what makes hydration
+  // Identical on server and on first client render, this is what makes hydration
   // match. `mounted` stays false until the effect runs.
   const [remaining, setRemaining] = useState(serverRemainingMs);
 

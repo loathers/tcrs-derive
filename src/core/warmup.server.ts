@@ -2,7 +2,7 @@
  * The shared data-file warm-up. NODE-ONLY. Port of run-all.sh:67-84.
  *
  * One mafia run populates a template directory of common data files, which every
- * permutation then seeds its private work dir from — so the startup downloads
+ * permutation then seeds its private work dir from, so the startup downloads
  * happen once rather than 54 times.
  */
 
@@ -54,7 +54,7 @@ export async function warmUp(o: WarmUpOptions): Promise<boolean> {
   //
   // mafia prints `username: ` and reads one line. An EMPTY username makes
   // attemptLogin fail immediately with `Invalid login.` WITHOUT CONSUMING THE NEXT
-  // LINE, so `exit` stays queued and is read as the next CLI command — cleanly
+  // LINE, so `exit` stays queued and is read as the next CLI command, cleanly
   // quitting the JVM *after* it has already downloaded and refreshed the shared
   // data files into <cwd>/data and <cwd>/settings.
   //
@@ -74,7 +74,7 @@ export async function warmUp(o: WarmUpOptions): Promise<boolean> {
     stream.on("data", (c: string) => o.onLog?.(c));
   }
 
-  // AbortSignal.timeout rather than the bash's `( sleep 300; kill_tree ... ) &`,
+  // AbortSignal.timeout rather than the bash's `( sleep 300. Kill_tree ... ) &`,
   // which was itself a leaked background job whose sleep could outlive the
   // subshell kill.
   const timeout = AbortSignal.timeout(o.timeoutMs);

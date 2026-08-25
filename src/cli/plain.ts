@@ -10,7 +10,7 @@
  *    `./run-all.sh > out.txt` produced an empty file.
  *  - Retry/discard diagnostics are printed as they happen. The bash shunted them to
  *    logs/_run.log purely so they would not corrupt the chart, which hid
- *    "[user] retrying after incomplete attempt 1/3" — the single most useful line
+ *    "[user] retrying after incomplete attempt 1/3", the single most useful line
  *    when debugging flakiness.
  */
 
@@ -70,7 +70,7 @@ export function createPlainReporter(o: PlainOptions) {
       case "perm:discarded":
         // Was invisible during a bash run.
         err(
-          `  WARN  ${event.user} derive did not complete (bailed early) — discarding partial data`,
+          `  WARN  ${event.user} derive did not complete (bailed early), discarding partial data`,
         );
         break;
 
@@ -96,7 +96,7 @@ export function createPlainReporter(o: PlainOptions) {
 
       case "perm:failed":
         err(
-          `  FAIL  ${event.user} (${event.copied}/3 files after ${event.attempts} attempt(s)) — ${event.reason}`,
+          `  FAIL  ${event.user} (${event.copied}/3 files after ${event.attempts} attempt(s)), ${event.reason}`,
         );
         break;
 
@@ -133,7 +133,7 @@ export function formatSummaryTable(state: RunState): string {
         break;
       case "failed":
         lines.push(
-          `  FAIL  ${user.padEnd(16)} ${p.status.copied}/3 files — ${p.status.reason}`,
+          `  FAIL  ${user.padEnd(16)} ${p.status.copied}/3 files, ${p.status.reason}`,
         );
         break;
       default:

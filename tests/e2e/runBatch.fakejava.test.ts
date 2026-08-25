@@ -98,7 +98,7 @@ describe("a full batch", () => {
       allSecrets,
     );
 
-    // Subscribing after the synchronous return must still see batch:start — this
+    // Subscribing after the synchronous return must still see batch:start, this
     // is why startBatch is synchronous.
     const events: RunEvent[] = [];
     handle.onEvent((e) => events.push(e));
@@ -162,7 +162,7 @@ describe("a full batch", () => {
 
   it("records failures without aborting the rest of the batch", async () => {
     const data = tmp();
-    // partial-bail always truncates, so both permutations fail — but the batch
+    // partial-bail always truncates, so both permutations fail, but the batch
     // still completes and reports them.
     const handle = startBatch(
       config(data, {

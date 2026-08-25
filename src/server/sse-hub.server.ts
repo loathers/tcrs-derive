@@ -6,8 +6,7 @@
  * no adapter between us and the socket.
  *
  * THE PROTOCOL DECISION THAT MATTERS: every connection begins with a full
- * `snapshot`, including reconnects. That is what makes a late joiner correct —
- * requirement 4, since someone else may have started the run — while letting the
+ * `snapshot`, including reconnects. That is what makes a late joiner correct, * requirement 4, since someone else may have started the run, while letting the
  * server keep NO replay buffer and ignore Last-Event-ID entirely.
  */
 

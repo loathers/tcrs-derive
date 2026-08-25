@@ -95,7 +95,7 @@ describe("the TCRS output path", () => {
   it("parses both the flat and the TCRS/ subdirectory forms", () => {
     // r29183 moved the output into a TCRS/ subdirectory. The old anchored pattern
     // silently stopped matching, so perm:wrote never fired AND collect() looked in
-    // the wrong place — a run where all three phases succeeded collected 0 files.
+    // the wrong place, a run where all three phases succeeded collected 0 files.
     expect(classifyLine("Wrote file TCRS_Sauceror_Vole.txt")).toEqual({
       kind: "wrote",
       file: "TCRS_Sauceror_Vole.txt",
@@ -139,7 +139,7 @@ describe("classifyLine edge cases", () => {
   });
 
   it("reads mafia's build banner in both observed forms", () => {
-    // Official release assets print a bare revision; the locally-built jar the
+    // Official release assets print a bare revision. The locally-built jar the
     // fixtures were captured from printed a `-M` suffix for the same revision.
     // Both must parse, or the manifest silently loses the build it ran against.
     expect(classifyLine("KoLmafia r29131")).toEqual({

@@ -62,7 +62,7 @@ export interface RunOneOptions {
   workDir: string;
   /** Shared warm-up template, or null when the warm-up failed. */
   templateDir: string | null;
-  /** Where collected files land — the staging dir, never a live published dir. */
+  /** Where collected files land, the staging dir, never a live published dir. */
   outputDir: string;
   maxAttempts: number;
   loginTimeoutMs: number;
@@ -146,7 +146,7 @@ export async function runOne(o: RunOneOptions): Promise<RunOneResult> {
 
     // Files present but the items derive bailed early means partial data. Discard
     // the copies so a later RESUME cannot adopt exactly the truncated file the
-    // completeness guard exists to reject, and treat it as retryable — bails are
+    // completeness guard exists to reject, and treat it as retryable, bails are
     // load-induced and often succeed on a quieter retry.
     if (copied > 0 && !complete) {
       await discard(o);
@@ -269,9 +269,9 @@ async function runAttempt(
   const pgid = child.pid ?? null;
   emit({ type: "perm:spawned", user: p.user, attempt, pid: pgid });
 
-  // The password goes on stdin, never argv — argv is visible in ps and
+  // The password goes on stdin, never argv, argv is visible in ps and
   // /proc/<pid>/cmdline. The two `no`s answer the login-time "derive TCRS data?"
-  // prompts; sending exactly two keeps the following commands in the right slots
+  // prompts. Sending exactly two keeps the following commands in the right slots
   // whether zero, one or two prompts appear. The trailing newline AND the EOF from
   // end() are both load-bearing: without EOF, an unexpected prompt blocks until the
   // hard timeout.
@@ -286,7 +286,7 @@ async function runAttempt(
     "exit",
   ].join("\n");
   child.stdin?.on("error", () => {
-    // EPIPE if the JVM died before reading the script; the watchdogs handle it.
+    // EPIPE if the JVM died before reading the script. The watchdogs handle it.
   });
   child.stdin?.end(script + "\n");
 
@@ -455,7 +455,7 @@ async function kill(
 
 /**
  * Signal a whole process group. The negated pid is what makes this reap every
- * descendant — with detached: true the child's pgid equals its pid.
+ * descendant, with detached: true the child's pgid equals its pid.
  */
 export function signalGroup(pgid: number, signal: NodeJS.Signals): void {
   try {
@@ -477,7 +477,7 @@ async function seedWorkdir(o: RunOneOptions): Promise<void> {
       verbatimSymlinks: true,
     });
   } catch (e) {
-    // The bash swallowed this with `|| true`; surface it as a warning instead.
+    // The bash swallowed this with `|| true`. Surface it as a warning instead.
     o.emit({
       type: "warn",
       user: o.permutation.user,
@@ -496,9 +496,9 @@ async function seedWorkdir(o: RunOneOptions): Promise<void> {
 /**
  * Where mafia may have put the TCRS files, relative to the JVM's working dir.
  *
- * r29183 moved the output into a `TCRS/` subdirectory of the data dir; older jars
+ * r29183 moved the output into a `TCRS/` subdirectory of the data dir. Older jars
  * wrote it flat. Both are searched, newest layout first, so the tool works across
- * jar versions rather than silently collecting nothing — which is exactly what
+ * jar versions rather than silently collecting nothing, which is exactly what
  * happened: all three phases completed, mafia reported "Wrote file TCRS/...", and
  * collect() found zero files because it only looked at `data/`.
  */
@@ -508,7 +508,7 @@ const OUTPUT_DIRS = ["data/TCRS", "data"] as const;
  * Copy the three files into the staging output dir.
  *
  * Two differences from the bash, both deliberate:
- *  - size > 0 is required (`[ -s ]`, not `[ -f ]`) — a zero-byte file must not
+ *  - size > 0 is required (`[ -s ]`, not `[ -f ]`), a zero-byte file must not
  *    count toward `copied`.
  *  - written to `.<name>.part` then renamed, so a torn copy can never be mistaken
  *    for good data. The bash cp'd non-atomically straight into the live out/.
@@ -543,7 +543,7 @@ async function findOutput(
       // size > 0 required (`[ -s ]`, not `[ -f ]`): a zero-byte file must not count.
       if (st.isFile() && st.size > 0) return candidate;
     } catch {
-      // Not here; try the next layout.
+      // Not here. Try the next layout.
     }
   }
   return null;

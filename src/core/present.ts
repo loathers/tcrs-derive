@@ -1,5 +1,5 @@
 /**
- * The shared presenter — PURE, and used by BOTH the ink CLI and the React web UI.
+ * The shared presenter, PURE, and used by BOTH the ink CLI and the React web UI.
  *
  * This file is what makes "two views, one core" real, and it is the answer to the
  * ink-web question: rather than depending on an unmaintained shim to render ink
@@ -24,7 +24,7 @@ export type Tone = "idle" | "active" | "ok" | "fail" | "warn";
 
 export interface RowView {
   readonly user: string;
-  /** 0-100. Caps near 99 for the items phase — see percentFor(). */
+  /** 0-100. Caps near 99 for the items phase, see percentFor(). */
   readonly pct: number;
   readonly fill: string;
   readonly bar: string;
@@ -98,10 +98,10 @@ export function rowView(p: PermState): RowView {
         return row(p, 100, FILL_ACTIVE, `${PHASE_LABEL[s.phase]}${t}`, "active");
       }
       // The items phase is the bulk and its percentage is meaningful. Before the
-      // first Progress: line it is legitimately 0 — the bash defaulted pct=0 the
+      // first Progress: line it is legitimately 0, the bash defaulted pct=0 the
       // same way (run-all.sh:180), so the bar starts empty rather than full.
       const pct = s.progress === null ? 0 : percentFor(s.progress);
-      // run-all.sh:193 — `printf '%3d%% items%s'`.
+      // run-all.sh:193, `printf '%3d%% items%s'`.
       return row(
         p,
         pct,
@@ -140,14 +140,14 @@ function row(
 
 /**
  * `%-12s [bar] status` (run-all.sh:200). The longest username is 11 chars, so
- * padEnd(12) always pads — identical to printf's %-12s.
+ * padEnd(12) always pads, identical to printf's %-12s.
  */
 export function formatRow(v: RowView): string {
   return `${v.user.padEnd(12)} [${v.bar}] ${v.status}`;
 }
 
 /**
- * run-all.sh:204-205. Note the TWO spaces before the parenthesis — the bash format
+ * run-all.sh:204-205. Note the TWO spaces before the parenthesis, the bash format
  * string had them and the snapshot test pins them.
  */
 export function summaryLine(s: RunSummary): string {

@@ -45,7 +45,7 @@ describe("cross-namespace safety", () => {
     // THE BUG THIS EXISTS TO PREVENT: two containers share one volume but have
     // separate PID namespaces, so the other container's pid means nothing here.
     // Our own pid is definitely alive, so a naive pid check would see "alive" and
-    // could equally see "dead" for a real holder — it fails open.
+    // could equally see "dead" for a real holder, it fails open.
     const path = join(tmp(), ".lock");
     writeFileSync(path, `other-container ${process.pid} ${new Date().toISOString()}\n`);
     // Fresh mtime => the other host is heartbeating => must be treated as held.

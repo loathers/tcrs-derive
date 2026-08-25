@@ -5,7 +5,7 @@
  *
  * In dev, React Router runs Vite in middleware mode and re-evaluates modules on
  * HMR. A plain module-scope `new RunManager()` would therefore be silently
- * recreated mid-run — losing the active run AND the single-flight lock while six
+ * recreated mid-run, losing the active run AND the single-flight lock while six
  * JVMs carry on in the background. The failure is silent, which is what makes it
  * dangerous. Pinning to globalThis is the standard fix in this lineage.
  */

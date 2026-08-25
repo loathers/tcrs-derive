@@ -10,7 +10,7 @@ export function RunSummary({ state }: { state: RunState }) {
   const s = state.summary;
   const elapsed =
     state.startedAt === null ? null : Date.now() - state.startedAt;
-  // ETA from observed throughput; meaningless until something has finished.
+  // ETA from observed throughput. Meaningless until something has finished.
   const eta =
     elapsed !== null && s.done > 0 && s.done < s.total
       ? (elapsed / s.done) * (s.total - s.done)

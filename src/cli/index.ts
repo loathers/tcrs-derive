@@ -1,7 +1,7 @@
 /**
  * `tcrs` CLI entry point.
  *
- * Arg parsing is node:util.parseArgs — three commands and ~18 flags do not justify
+ * Arg parsing is node:util.parseArgs, three commands and ~18 flags do not justify
  * a dependency, and the help text below is the whole cost.
  *
  * Exit codes preserve the bash's: 0 all ok, 1 any failure (`[ "$bad" -eq 0 ]`),
@@ -13,7 +13,7 @@ import { runCommand } from "./commands/run.ts";
 import { listCommand } from "./commands/list.ts";
 import { attachCommand } from "./commands/attach.tsx";
 
-const HELP = `tcrs — batch-derive KoLmafia TCRS data for every class x sign permutation
+const HELP = `tcrs, batch-derive KoLmafia TCRS data for every class x sign permutation
 
 Usage:
   tcrs run [options]        derive locally, with a live progress chart

@@ -2,13 +2,13 @@
  * File and zip downloads. NODE-ONLY.
  *
  * An Express route rather than a React Router resource route, because res.sendFile
- * gives Range, ETag, Last-Modified, HEAD and conditional GET for free — all of
+ * gives Range, ETag, Last-Modified, HEAD and conditional GET for free, all of
  * which a `curl`-scripting audience and a 14MB zip actually want.
  *
  * PATH-TRAVERSAL SAFETY IS BY CONSTRUCTION, NOT BY VALIDATION. The requested name
  * is looked up in a closed set generated from the core's permutation table, and is
  * never used to build a path until it has been found there. So `..`, `%2e%2e%2f`,
- * absolute paths, backslashes and NUL bytes are all impossible — there is no regex
+ * absolute paths, backslashes and NUL bytes are all impossible, there is no regex
  * to get subtly wrong.
  */
 
@@ -66,7 +66,7 @@ export function fileHandler(dataDir: string) {
     res.sendFile(join(current, "data", name), {
       headers: {
         "content-type": "text/plain; charset=utf-8",
-        // Stable URLs people will curl in scripts, so no `immutable`; the ETag
+        // Stable URLs people will curl in scripts, so no `immutable`. The ETag
         // keeps conditional GET cheap.
         "cache-control": "public, max-age=0, must-revalidate",
         etag: `W/"${runId}-${name}"`,

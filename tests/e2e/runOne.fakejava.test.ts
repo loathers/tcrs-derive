@@ -12,7 +12,7 @@ import { runOne, type RunOneOptions } from "#core/runOne.server";
  * the 'close'-vs-'exit' race, both watchdogs, process-group killing, the collect
  * size rule, discard-partials, retry backoff, and abort mid-derive.
  *
- * No JVM, no network, no KoL account — fake-java.mjs replays a committed fixture.
+ * No JVM, no network, no KoL account, fake-java.mjs replays a committed fixture.
  */
 
 const FAKE_JAVA = resolve("tests/fixtures/fake-java.mjs");
@@ -166,7 +166,7 @@ describe("the happy path", () => {
 describe("partial output is discarded, not published", () => {
   it("rejects a derive that bailed early despite writing 3 files", async () => {
     // mafia prints Done! and saves truncated files. File existence alone would
-    // accept this; the completeness guard must not.
+    // accept this. The completeness guard must not.
     const h = harness(["--fake-fixture=partial-bail"], { maxAttempts: 1 });
     const r = await runOne(h.opts);
 
@@ -180,7 +180,7 @@ describe("partial output is discarded, not published", () => {
   });
 
   it("retries after an incomplete attempt and can then succeed", async () => {
-    // First attempt truncates, so it retries; fake-java is stateless, so use a
+    // First attempt truncates, so it retries. Fake-java is stateless, so use a
     // fixture that always truncates and assert the retry actually happened.
     const h = harness(["--fake-fixture=partial-bail"], { maxAttempts: 2 });
     const r = await runOne(h.opts);
@@ -354,7 +354,7 @@ describe("work dir seeding", () => {
     const h = harness([], { templateDir: template, keepWorkdir: true });
     await runOne(h.opts);
 
-    // The shared file survived; the stale data/ did not leak through.
+    // The shared file survived. The stale data/ did not leak through.
     const collected = readFileSync(
       join(h.outputDir, AT_BLENDER.files[0]),
       "utf8",
@@ -398,7 +398,7 @@ describe("the TCRS output location", () => {
   }, 30_000);
 
   it("prefers the subdirectory when both exist", async () => {
-    // A workdir seeded from a template could in principle hold both; the newer
+    // A workdir seeded from a template could in principle hold both. The newer
     // layout is the authoritative one.
     const h = harness(["--fake-subdir"], { keepWorkdir: true });
     await runOne(h.opts);

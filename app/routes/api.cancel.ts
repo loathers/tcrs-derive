@@ -1,5 +1,5 @@
 /**
- * POST /api/cancel — stop the run that is currently in progress.
+ * POST /api/cancel, stop the run that is currently in progress.
  *
  * Exists because the only way to stop a batch used to be SIGTERM-ing the server,
  * which is both awkward and dangerous: it is easy to kill a run you did not mean
@@ -7,7 +7,7 @@
  * deliberately matters.
  *
  * Deliberately unauthenticated, matching the generate button. Cancelling does not
- * cost a cooldown that generating had not already spent — the attempt is recorded
+ * cost a cooldown that generating had not already spent, the attempt is recorded
  * when the run starts, and the normal outcome rules apply (an abort in the first
  * five minutes is treated as never having happened, so a mistaken cancel is
  * immediately retryable).

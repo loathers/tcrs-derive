@@ -1,5 +1,5 @@
 /**
- * RunState and the event reducer — THE SEAM.
+ * RunState and the event reducer, THE SEAM.
  *
  * PURE: no `node:` imports, no Date.now(), no Math.random, no I/O. This exact
  * function runs in three places:
@@ -32,7 +32,7 @@ export type PermStatus =
        * null during the cafe phases, because mafia emits no Progress: lines for
        * them. Keeping the reducer honest here is what makes it STRUCTURALLY
        * IMPOSSIBLE for a view to render a stale items percentage during a cafe
-       * phase — the bash instead special-cased it in the renderer
+       * phase. The bash instead special-cased it in the renderer
        * (run-all.sh:192-196), which meant two renderers would each have to
        * re-derive the rule. See present.ts, where it lives exactly once.
        */
@@ -83,7 +83,7 @@ export interface RunState {
   readonly cancelled: boolean;
   readonly warmup: WarmupState;
   readonly concurrency: number;
-  /** Row order — CLASS_ORDER x SIGNS, load-bearing for the chart and the grid. */
+  /** Row order, CLASS_ORDER x SIGNS, load-bearing for the chart and the grid. */
   readonly order: readonly string[];
   readonly perms: Readonly<Record<string, PermState>>;
   readonly summary: RunSummary;
@@ -164,7 +164,7 @@ function recount(
         break;
       // login / stalled / deriving / retrying all count as in-flight. Note the
       // bash counted a permutation in retry-backoff as running while still
-      // displaying its previous phase; `retrying` is now an explicit status.
+      // displaying its previous phase. `retrying` is now an explicit status.
       case "login":
       case "stalled":
       case "deriving":
@@ -219,7 +219,7 @@ function apply(state: RunState, event: RunEvent): RunState {
 
     case "batch:skipped":
       // The bash filtered resume-skipped permutations out of the task list
-      // entirely, so they vanished from the chart AND the totals — resuming 52 of
+      // entirely, so they vanished from the chart AND the totals. Resuming 52 of
       // 54 showed an alarming "Overall: 0/2 done". They are now visible rows.
       return patch(state, event.user, () => ({
         status: { kind: "skipped", reason: event.reason },
@@ -249,7 +249,7 @@ function apply(state: RunState, event: RunEvent): RunState {
       return state;
 
     case "perm:phase":
-      // progress starts null on every phase change; only the items phase will
+      // progress starts null on every phase change. Only the items phase will
       // ever fill it in.
       return patch(state, event.user, () => ({
         status: { kind: "deriving", phase: event.phase, progress: null },
@@ -259,7 +259,7 @@ function apply(state: RunState, event: RunEvent): RunState {
       return patch(state, event.user, (p) => ({
         status: {
           kind: "deriving",
-          // A progress line before any phase header belongs to items — that is
+          // A progress line before any phase header belongs to items, that is
           // the only phase that reports.
           phase: p.status.kind === "deriving" ? p.status.phase : "items",
           progress: { done: event.done, total: event.total },
@@ -291,7 +291,7 @@ function apply(state: RunState, event: RunEvent): RunState {
       return state;
 
     case "perm:discarded":
-      // Partial output was thrown away; the files are no longer published.
+      // Partial output was thrown away. The files are no longer published.
       return patch(state, event.user, () => ({ filesWritten: [] }));
 
     case "perm:retryWait":
@@ -299,7 +299,7 @@ function apply(state: RunState, event: RunEvent): RunState {
         status: {
           kind: "retrying",
           nextAttempt: event.nextAttempt,
-          // Derived from the event's own timestamp, never Date.now() — that is
+          // Derived from the event's own timestamp, never Date.now(), that is
           // what keeps this reducer pure and snapshot-testable.
           waitUntil: event.at + event.seconds * 1000,
         },

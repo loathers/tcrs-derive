@@ -1,5 +1,5 @@
 /**
- * POST /api/generate — request a run.
+ * POST /api/generate, request a run.
  *
  * A dedicated resource route rather than the index route's action, for two
  * reasons: React Router needs a `?index` query param to disambiguate an index

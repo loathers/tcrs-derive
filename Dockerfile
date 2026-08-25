@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 
 # =============================================================================
-# tcrs-derive — Node + a JVM, for Coolify.
+# tcrs-derive, Node + a JVM, for Coolify.
 #
 # Two things in here are load-bearing and easy to lose in a refactor:
 #   1. tini as ENTRYPOINT. Every KoLmafia JVM is spawned detached (setsid), so one
-#      that outlives its parent is reparented to PID 1 — and Node as PID 1 does not
+#      that outlives its parent is reparented to PID 1, and Node as PID 1 does not
 #      reap children. They would become zombies accumulating across runs until the
 #      container hit its task limit. tini reaps them and forwards signals. Baking
 #      it in here means it holds regardless of whether the platform passes --init.

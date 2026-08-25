@@ -1,19 +1,18 @@
 /**
  * Streaming parser for KoLmafia's --CLI output.
  *
- * PURE: no `node:` imports. Replaces the bash's poll-and-grep layer entirely —
- * `last_progress` (common.sh:48-55), `derive_complete` (run-one.sh:50-56),
+ * PURE: no `node:` imports. Replaces the bash's poll-and-grep layer entirely, * `last_progress` (common.sh:48-55), `derive_complete` (run-one.sh:50-56),
  * `current_attempt_block` (common.sh:41-44) and the 1.5s chart re-grep.
  *
  * THE REGEXES HERE ARE THE HIGHEST-RISK PART OF THE PORT. Every pattern is
  * grounded in the real logs committed under tests/fixtures/logs/. Across two full
  * successful runs, exactly five distinct lines match
- * /error|exception|timed out|unable|fail/i — and ALL FIVE ARE BENIGN:
+ * /error|exception|timed out|unable|fail/i, and ALL FIVE ARE BENIGN:
  *
  *   Error during session initialization           (in 54/54 successful runs)
  *   Unable to invoke no                           (108x across successes)
  *   Unexpected error, debug log printed.          (mid-derive, run completed)
- *   IO Exception for TCRS_....txt: FileNotFound   (every run; mafia probing)
+ *   IO Exception for TCRS_....txt: FileNotFound   (every run. Mafia probing)
  *   Local file TCRS_....txt does not exist.       (every run)
  *
  * Misclassifying any of them as transient burns all 3 attempts on all 54
@@ -23,7 +22,7 @@
 import type { Phase } from "./events.ts";
 
 /**
- * "This attempt is doomed, but a retry might work" — network blips where mafia's
+ * "This attempt is doomed, but a retry might work", network blips where mafia's
  * Java client can't reach KoL even though the box can. Ported verbatim from
  * run-one.sh:41, which applied it with `grep -qiE` (case-insensitive).
  *
@@ -37,7 +36,7 @@ export const TRANSIENT_RE =
   /connect timed out|connection timed out|read timed out|IOException retrieving server reply|Connection reset|Unable to (?:establish|connect)/i;
 
 /**
- * The account genuinely started deriving — login worked, don't kill it.
+ * The account genuinely started deriving, login worked, don't kill it.
  * run-one.sh:43, applied case-sensitively.
  */
 export const STARTED_RE =
@@ -62,7 +61,7 @@ const PROGRESS_RE = /Progress: (\d+)\/(\d+)/;
  */
 const WROTE_RE = /^Wrote file (?:([^\s]*)[/\\])?(TCRS_[^\s/\\]+\.txt)/;
 
-/** The account isn't in a TCRS run. Genuinely broken — never retry this. */
+/** The account isn't in a TCRS run. Genuinely broken, never retry this. */
 const NOT_IN_TCRS_RE = /You are not in a Two Crazy Random Summer run/i;
 
 /** mafia's build banner, e.g. `KoLmafia r29131-M`. Recorded in the manifest so a
@@ -172,7 +171,7 @@ export class DeriveTracker {
   /** Progress for the CURRENT phase, reset on each phase change. */
   progress: { done: number; total: number } | null = null;
   /** Last progress seen during the `items` phase specifically. This, not the
-   *  current phase's progress, is what completeness is judged on — the bash scoped
+   *  current phase's progress, is what completeness is judged on, the bash scoped
    *  it with `awk '/for all cafe/{exit}'` (run-one.sh:52). */
   itemsProgress: { done: number; total: number } | null = null;
   started = false;
@@ -229,13 +228,13 @@ export const COMPLETE_TOLERANCE = 150;
 /**
  * Did the real-items derive actually finish?
  *
- * A mafia parallel derive bails out — but still prints "Done!" and saves a PARTIAL
- * file — if any single item's description fetch errors (run-one.sh:44-56). So file
+ * A mafia parallel derive bails out, but still prints "Done!" and saves a PARTIAL
+ * file, if any single item's description fetch errors (run-one.sh:44-56). So file
  * existence is not enough.
  *
  * The tolerance must exceed mafia's 100-item announce step. Observed across all the
  * real logs: the total is 12070 and the last line is always `Progress: 12001/12070`
- * — exactly 69 short. The comparison is inclusive, so 69 is the smallest tolerance
+ *, exactly 69 short. The comparison is inclusive, so 69 is the smallest tolerance
  * that still accepts a real run; 68 rejects all 54 of them, and anything >= 12070
  * disables the guard entirely.
  *

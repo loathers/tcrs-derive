@@ -1,7 +1,7 @@
 /**
- * `tcrs attach` — watch a run happening on the server.
+ * `tcrs attach`, watch a run happening on the server.
  *
- * Renders the IDENTICAL App as `tcrs run`; only the StateSource differs. Someone
+ * Renders the IDENTICAL App as `tcrs run`. Only the StateSource differs. Someone
  * else may have started the run from the web UI, which is exactly the case this
  * command exists for.
  */

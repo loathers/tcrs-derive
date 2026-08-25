@@ -7,7 +7,7 @@
  * bash met with `disown` plus an EXIT trap.
  *
  * IN DOCKER THIS MATTERS TWICE OVER. A detached JVM that outlives its parent is
- * reparented to PID 1, and Node as PID 1 does not reap children — they become
+ * reparented to PID 1, and Node as PID 1 does not reap children, they become
  * zombies that accumulate across runs. Hence tini as the image ENTRYPOINT; this
  * reaper is the in-process half of the same concern.
  */

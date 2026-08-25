@@ -110,7 +110,7 @@ export function paths(dataDir: string): Paths {
 
 /**
  * A filesystem- and URL-safe run id. Raw ISO's `:` is legal on ext4 but breaks
- * exfat/CIFS backup targets and needs quoting in a shell; the true instant is kept
+ * exfat/CIFS backup targets and needs quoting in a shell. The true instant is kept
  * in the manifest.
  */
 export function runIdFor(date: Date): string {
@@ -184,7 +184,7 @@ export async function resolveCurrent(dataDir: string): Promise<string | null> {
  * Publish a staged run atomically.
  *
  * `rename` over an existing symlink is atomic on Linux, so there is never a window
- * where `current` is absent — an unlink-then-symlink would leave one.
+ * where `current` is absent, an unlink-then-symlink would leave one.
  *
  * The symlink target is RELATIVE, so the whole data tree can be moved or bind
  * mounted at a different path (which matters in a container) without breaking.
@@ -243,7 +243,7 @@ export async function carryForward(
       await copyFile(src, join(staging.dataDir, name));
       carried.push({ ...entry, sourceRunId: entry.sourceRunId });
     } catch {
-      // The previous file is gone; the entry simply stays missing.
+      // The previous file is gone. The entry simply stays missing.
     }
   }
   return carried;
@@ -307,7 +307,7 @@ export async function writeAtomic(
 }
 
 /** Remove per-JVM scratch trees. Each is a full mafia data tree, so this is real
- *  disk — the bash reclaimed it per permutation and we do it per run as well. */
+ *  disk, the bash reclaimed it per permutation and we do it per run as well. */
 export async function clearWork(dataDir: string): Promise<void> {
   const work = join(dataDir, WORK_DIR);
   await rm(work, { recursive: true, force: true });

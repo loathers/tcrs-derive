@@ -2,7 +2,7 @@
  * A tiny seq-stamping event bus. PURE: no `node:` imports (deliberately not
  * node:events, so this file stays importable by the browser bundle).
  *
- * The single writer of `seq` — monotonic from 1, used as the SSE `id:` and for
+ * The single writer of `seq`, monotonic from 1, used as the SSE `id:` and for
  * deterministic reducer tests.
  */
 

@@ -7,7 +7,7 @@ import { PermutationCell } from "./PermutationCell.tsx";
  *
  * That is literally the shape of the data (a class x sign product), it fits in
  * ~200px with no scrolling, and it reads at a glance. 54 stacked bars is the right
- * answer in a terminal — where the ink chart does exactly that — and the wrong one
+ * answer in a terminal, where the ink chart does exactly that, and the wrong one
  * on a web page.
  */
 export function ProgressGrid({ state }: { state: RunState }) {

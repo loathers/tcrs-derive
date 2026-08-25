@@ -29,8 +29,8 @@ export function DownloadPanel({
       <DownloadTable files={files} stale={stale} />
       {files.sums !== null && (
         <p className="small">
-          <a href={files.sums.url}>{files.sums.name}</a> &mdash;{" "}
-          <code>sha256sum -c</code> to verify.
+          Checksums: <a href={files.sums.url}>{files.sums.name}</a>. Verify with{" "}
+          <code>sha256sum -c</code>.
         </p>
       )}
     </section>

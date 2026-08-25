@@ -94,8 +94,8 @@ export class RunManager {
     await mkdir(this.#o.config.dataDir, { recursive: true });
 
     // Single-INSTANCE lock, distinct from the single-flight lock in trigger().
-    // Two processes sharing one data volume — a rolling deploy that starts the new
-    // container before stopping the old one — could otherwise both run a batch and
+    // Two processes sharing one data volume, a rolling deploy that starts the new
+    // container before stopping the old one, could otherwise both run a batch and
     // tear the published dataset. The loser throws LockHeldError and exits.
     // This is why the deploy strategy must be stop-then-start, not rolling.
     this.#lock = await acquireLock(join(this.#o.config.dataDir, ".lock"));
@@ -157,7 +157,7 @@ export class RunManager {
    *
    * DO NOT INSERT AN `await` ANYWHERE ABOVE THE ASSIGNMENT. That is exactly why
    * the disk check reads a cached value refreshed on a timer instead of calling
-   * statfs() inline — an `await fs.statfs(...)` here would silently reopen the
+   * statfs() inline, an `await fs.statfs(...)` here would silently reopen the
    * race and let two batches run at once against one data volume.
    */
   trigger(): GenerateResponse {

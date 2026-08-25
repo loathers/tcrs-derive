@@ -1,9 +1,9 @@
 /**
  * The terminal's height, kept current.
  *
- * `measureElement` measures ink boxes, not the terminal — wrong tool. And the bash
+ * `measureElement` measures ink boxes, not the terminal, wrong tool. And the bash
  * computed `tput lines` ONCE at startup, so resizing mid-run corrupted the display
- * permanently; this recomputes on resize.
+ * permanently. This recomputes on resize.
  */
 import { useEffect, useState } from "react";
 

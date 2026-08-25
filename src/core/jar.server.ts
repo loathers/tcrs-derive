@@ -32,8 +32,7 @@ export class JarUnavailableError extends Error {
  * every permutation failed with a confusing spawn error instead of the site either
  * fetching it or saying plainly that it could not.
  *
- * In the container this is a no-op — the jar is baked in at a pinned MAFIA_TAG —
- * but it is what makes a fresh dev checkout or a fresh volume work unattended.
+ * In the container this is a no-op, the jar is baked in at a pinned MAFIA_TAG, * but it is what makes a fresh dev checkout or a fresh volume work unattended.
  *
  * ALWAYS RETURNS AN ABSOLUTE PATH, and that is a correctness requirement rather
  * than tidiness: each JVM is spawned with cwd set to its own private work dir, so a
@@ -76,7 +75,7 @@ export async function ensureJar(o: {
   }
 }
 
-/** Locate an existing jar. Returns an ABSOLUTE path, or null — see ensureJar. */
+/** Locate an existing jar. Returns an ABSOLUTE path, or null, see ensureJar. */
 export async function resolveJar(o: {
   explicit?: string | undefined;
   searchDir: string;
@@ -113,7 +112,7 @@ export interface ReleaseAsset {
   name: string;
 }
 
-/** Find a release asset — a specific tag when given, else the latest. */
+/** Find a release asset, a specific tag when given, else the latest. */
 export async function findReleaseJar(tag?: string): Promise<ReleaseAsset> {
   const url = tag === undefined ? `${RELEASES}/latest` : `${RELEASES}/tags/${tag}`;
   const res = await fetch(url, {

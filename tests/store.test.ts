@@ -80,7 +80,7 @@ describe("cooldown arithmetic", () => {
   });
 
   it("uses the short window after a total failure", async () => {
-    // A failure costs KoL nothing; locking a public site for 12h over one is
+    // A failure costs KoL nothing. Locking a public site for 12h over one is
     // user-hostile.
     const c = clock(0);
     const store = new Store(tmp(), COOLDOWN, c.now);

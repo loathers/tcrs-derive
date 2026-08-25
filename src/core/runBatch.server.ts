@@ -1,8 +1,8 @@
 /**
  * Batch orchestration. NODE-ONLY. Port of run-all.sh.
  *
- * Replaces `xargs -P "$CONCURRENCY" -L1 run-one.sh` (run-all.sh:259) and — much
- * more importantly — the 1.5s progress-polling loop that re-derived all state by
+ * Replaces `xargs -P "$CONCURRENCY" -L1 run-one.sh` (run-all.sh:259) and, much
+ * more importantly, the 1.5s progress-polling loop that re-derived all state by
  * `tr | awk | grep`-ing 54 growing log files. Over a 7.5 minute batch that was
  * ~300 frames x 54 files x ~4 forks: roughly 65,000 processes and ~80MB of
  * re-reading, purely to draw bars. Consuming each child's stdout directly deletes
@@ -116,7 +116,7 @@ export class MissingPasswordsError extends Error {
  * perm:queued events are lost and the chart begins blank. (`handle.state` also
  * covers late subscribers, but returning synchronously is the cheap fix.)
  *
- * Throws synchronously on a preflight failure — unknown ONLY names, or missing
+ * Throws synchronously on a preflight failure, unknown ONLY names, or missing
  * passwords. The bash discovered a missing password inside the worker
  * (run-one.sh:20), so one .env typo failed one permutation 40 minutes into a batch.
  */
@@ -258,7 +258,7 @@ async function execute(
   await pool(todo, cfg.concurrency, signal, async (p) => {
     const startedAt = now().getTime();
     // The pgid equals the spawned pid (detached: true). Tracked so a SIGTERM to us
-    // reaps the JVM subtree rather than orphaning it — see reaper.server.ts.
+    // reaps the JVM subtree rather than orphaning it, see reaper.server.ts.
     let livePgid: number | null = null;
     let one: RunOneResult;
     try {
@@ -307,7 +307,7 @@ async function execute(
         },
       });
     } catch (e) {
-      // runOne is specified never to reject; if it does, record it rather than
+      // runOne is specified never to reject. If it does, record it rather than
       // letting the pool worker die and silently reduce concurrency.
       emit({
         type: "warn",
@@ -350,7 +350,7 @@ async function execute(
 
   // --- Index what we produced -------------------------------------------
   // Skipped entirely when cancelled: a cancelled run is never published, so
-  // hashing every collected file only to delete it is pure waste — and it races
+  // hashing every collected file only to delete it is pure waste, and it races
   // the staging directory being torn down, which surfaced as a spurious ENOENT
   // on SHA256SUMS.txt.tmp.
   let missing: string[] = [];
@@ -442,7 +442,7 @@ export async function pool<T>(
   const width = Math.max(1, Math.min(limit, items.length));
   const workers = Array.from({ length: width }, async () => {
     while (i < items.length) {
-      // Stop ADMITTING on abort; do not reject work already in flight, which
+      // Stop ADMITTING on abort. Do not reject work already in flight, which
       // handles its own cancellation via the same signal.
       if (signal.aborted) return;
       const item = items[i++]!;

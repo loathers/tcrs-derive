@@ -5,8 +5,7 @@
  * the server alike. See tests/core.purity.test.ts.
  *
  * Ported from run-all.sh:58-65 (class_token / CLASS_ORDER / SIGNS) and
- * common.sh:32-35 (tcrs_files). The bash `to_lower`/`to_upper` helpers are gone —
- * they existed only because macOS ships bash 3.2, which lacks ${x,,}/${x^^}.
+ * common.sh:32-35 (tcrs_files). The bash `to_lower`/`to_upper` helpers are gone, * they existed only because macOS ships bash 3.2, which lacks ${x,,}/${x^^}.
  */
 
 /** Class abbreviations, in the order the progress chart lists them. */
@@ -74,7 +73,7 @@ export interface Permutation {
 }
 
 /**
- * The three TCRS output basenames for a permutation — the single source of truth
+ * The three TCRS output basenames for a permutation, the single source of truth
  * for the filename scheme the whole tool is built around (common.sh:32-35).
  */
 /**
@@ -126,14 +125,14 @@ function makePermutation(abbr: ClassAbbr, signCap: Sign): Permutation {
 }
 
 /**
- * All 54 permutations in CLASS_ORDER x SIGNS order — NOT alphabetical. This is the
+ * All 54 permutations in CLASS_ORDER x SIGNS order, NOT alphabetical. This is the
  * progress chart's row order and the web grid's cell order, so it is load-bearing.
  */
 export const ALL_PERMUTATIONS: readonly Permutation[] = CLASS_ORDER.flatMap(
   (abbr) => SIGNS.map((signCap) => makePermutation(abbr, signCap)),
 );
 
-/** All 162 output basenames — the download allow-list (see the server's routes). */
+/** All 162 output basenames, the download allow-list (see the server's routes). */
 export const ALL_FILE_NAMES: readonly string[] = ALL_PERMUTATIONS.flatMap(
   (p) => p.files,
 );
@@ -154,7 +153,7 @@ const BY_FILE = new Map<string, { permutation: Permutation; kind: FileKind }>(
 );
 
 /** Resolve an output basename back to its permutation. Returns undefined for
- *  anything not in the closed set of 162 — which is what makes the download route
+ *  anything not in the closed set of 162, which is what makes the download route
  *  traversal-proof by construction. */
 export function permutationForFile(
   name: string,
@@ -177,10 +176,10 @@ export interface Selection {
 
 /**
  * Apply the ONLY/EXCLUDE filters. EXCLUDE is applied first, then ONLY as an
- * allow-list — the order run-all.sh's want_user() used (run-all.sh:87-91).
+ * allow-list, the order run-all.sh's want_user() used (run-all.sh:87-91).
  */
 export function selectPermutations(o: SelectOptions = {}): Selection {
-  // An empty list must mean "no filter", not "allow nothing" — ONLY="" is how the
+  // An empty list must mean "no filter", not "allow nothing", ONLY="" is how the
   // bash spelled unset, and a list of only blanks reduces to the same thing.
   const onlyList = o.only?.filter((s) => s.length > 0) ?? [];
   const only = onlyList.length > 0 ? onlyList : undefined;

@@ -1,12 +1,12 @@
 /**
- * The RunEvent union — THE WIRE FORMAT.
+ * The RunEvent union, THE WIRE FORMAT.
  *
  * PURE: no `node:` imports. This union is the seam between the runner and every
  * view of it. It is emitted server-side by runBatch, folded into RunState by
  * state.ts, and shipped verbatim over SSE to the browser and to `tcrs attach`.
  *
  * HARD CONSTRAINT: every member must be plain-JSON round-trippable. No Date, no
- * Error, no Map/Set, no Buffer, no meaningful `undefined` — it goes onto the wire
+ * Error, no Map/Set, no Buffer, no meaningful `undefined`. It goes onto the wire
  * with JSON.stringify and must survive JSON.parse unchanged.
  *
  * Raw stdout deliberately does NOT travel here. It is a separate LogChunk channel
@@ -18,10 +18,10 @@ export type Phase = "items" | "cafe_booze" | "cafe_food";
 
 export type FailureReason =
   | "login" // never got as far as deriving
-  | "incomplete" // derive bailed early; partial output discarded
+  | "incomplete" // derive bailed early, partial output discarded
   | "timeout" // hit the overall per-permutation TIMEOUT
   | "stalled" // no progress for stallTimeout
-  | "not-in-tcrs" // account isn't in a TCRS run — not retryable
+  | "not-in-tcrs" // account is not in a TCRS run, so never retried
   | "no-files" // ran, but wrote nothing
   | "spawn" // couldn't start the JVM at all
   | "cancelled"; // aborted by the operator or a shutdown
@@ -32,7 +32,7 @@ interface Base {
   /** Monotonic from 1 within a run. Used as the SSE `id:` and for deterministic
    *  reducer tests. */
   readonly seq: number;
-  /** Epoch ms. The reducer takes ALL its time from this — it never calls
+  /** Epoch ms. The reducer takes ALL its time from this, it never calls
    *  Date.now(), which is what keeps it pure and snapshot-testable. */
   readonly at: number;
 }
@@ -102,9 +102,9 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   : never;
 
 /**
- * Raw child output, on its own channel — deliberately NOT a RunEvent.
+ * Raw child output, on its own channel, deliberately NOT a RunEvent.
  * Consumed by logSink to write the per-permutation log file, and servable on
- * request; never broadcast to every client.
+ * request. Never broadcast to every client.
  */
 export interface LogChunk {
   readonly user: string;

@@ -252,7 +252,7 @@ export class Store {
  * The cooldown window for a given outcome.
  *
  * A total failure (KoL down, say) costs KoL nothing, so locking a public site for
- * 12 hours over one is user-hostile — hence the shorter window. And a crash within
+ * 12 hours over one is user-hostile, hence the shorter window. And a crash within
  * the first few minutes is treated as never having happened.
  */
 export function hoursFor(

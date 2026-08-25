@@ -1,7 +1,7 @@
 /**
  * Build the grouped download listing from the published manifest. NODE-ONLY.
  *
- * Read straight out of the manifest — never a directory walk per request.
+ * Read straight out of the manifest, never a directory walk per request.
  */
 
 import type {
