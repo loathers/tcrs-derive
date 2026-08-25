@@ -426,3 +426,38 @@ describe("cancelling a run", () => {
     expect((await m.status()).dataset).toBeNull();
   }, 120_000);
 });
+
+describe("what generatedAt means", () => {
+  it("is when the dataset finished, not when the run started", async () => {
+    // A batch takes ~12 minutes. Reporting startedAt made "generated N minutes
+    // ago" overstate the age by the whole duration.
+    const { manager: m, dataDir } = await manager({
+      only: ["at_blender"],
+    });
+    expect(m.trigger().accepted).toBe(true);
+    await waitUntil(async () => (await m.status()).run === null, 60_000);
+
+    const status = await m.status();
+    expect(status.dataset).not.toBeNull();
+
+    const { readFileSync } = await import("node:fs");
+    const manifest = JSON.parse(
+      readFileSync(join(dataDir, "current", "manifest.json"), "utf8"),
+    ) as { startedAt: string; finishedAt: string };
+
+    expect(status.dataset!.generatedAt).toBe(manifest.finishedAt);
+    expect(status.dataset!.generatedAt).not.toBe(manifest.startedAt);
+  }, 120_000);
+
+  it("still measures the cooldown from the start, so a long run does not drift it", async () => {
+    // The two timestamps serve different purposes and must not be conflated.
+    const { manager: m, store } = await manager({ only: ["at_blender"] });
+    expect(m.trigger().accepted).toBe(true);
+    await waitUntil(async () => (await m.status()).run === null, 60_000);
+
+    const status = await m.status();
+    const started = Date.parse(store.lastAttempt!.startedAt);
+    const nextAllowed = Date.parse(status.cooldown.nextAllowedAt!);
+    expect(nextAllowed - started).toBe(12 * 60 * 60 * 1000);
+  }, 120_000);
+});

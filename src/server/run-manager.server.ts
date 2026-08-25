@@ -443,7 +443,11 @@ export class RunManager {
 
     return {
       runId: manifest.id,
-      generatedAt: manifest.startedAt,
+      // When the dataset came into existence, not when the run began. A batch
+      // takes ~12 minutes, so showing startedAt made "generated N minutes ago"
+      // overstate the age by the whole duration. The cooldown still measures from
+      // startedAt, deliberately, so a long run does not push the window later.
+      generatedAt: manifest.finishedAt ?? manifest.startedAt,
       outcome: manifest.outcome === "success" ? "success" : "partial",
       fileCount: manifest.entries.length,
       totalBytes: manifest.totalBytes,

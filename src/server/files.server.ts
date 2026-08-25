@@ -66,7 +66,8 @@ export async function buildFileList(
 
   return {
     runId: manifest.id,
-    generatedAt: manifest.startedAt,
+    // Finish time, matching the dataset summary. See run-manager.server.ts.
+    generatedAt: manifest.finishedAt ?? manifest.startedAt,
     groups,
     sums: { name: SUMS_NAME, url: `/api/download/file/${SUMS_NAME}` },
   };
