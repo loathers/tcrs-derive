@@ -17,7 +17,7 @@ export function RunSummary({ state }: { state: RunState }) {
       : null;
 
   return (
-    <p className="run-summary" aria-live="polite">
+    <p aria-live="polite">
       <strong>{summaryLine(s)}</strong>
       {elapsed !== null && <> &middot; {formatDuration(elapsed)} elapsed</>}
       {eta !== null && <> &middot; ~{formatDuration(eta)} remaining</>}

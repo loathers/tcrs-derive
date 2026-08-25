@@ -12,24 +12,25 @@ export function DownloadPanel({
   stale: readonly string[];
 }) {
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h2>Downloads</h2>
-        {dataset !== null && <ZipButton dataset={dataset} />}
-      </div>
-      {stale.length > 0 && (
-        <p className="muted small">
-          {stale.length} permutation{stale.length === 1 ? "" : "s"} could not be
-          re-derived in the latest run, so the previous data is served for
-          {stale.length === 1 ? " it" : " them"} — marked{" "}
-          <em>stale</em> below.
-        </p>
-      )}
+    <section>
+      <h2>Downloads</h2>
+      {dataset !== null && <ZipButton dataset={dataset} />}
+      <p className="muted small">
+        Three files per combination: items, cafe booze, cafe food. Goes in
+        KoLmafia&rsquo;s <code>data/</code>.
+        {stale.length > 0 && (
+          <>
+            {" "}
+            {stale.length} marked <em>old</em> failed the last run and are
+            carried over from the previous one.
+          </>
+        )}
+      </p>
       <DownloadTable files={files} stale={stale} />
       {files.sums !== null && (
-        <p className="muted small">
-          Checksums: <a href={files.sums.url}>{files.sums.name}</a> (also included
-          in the zip).
+        <p className="small">
+          <a href={files.sums.url}>{files.sums.name}</a> &mdash;{" "}
+          <code>sha256sum -c</code> to verify.
         </p>
       )}
     </section>

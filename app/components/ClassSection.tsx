@@ -23,8 +23,7 @@ export function ClassSection({
   return (
     <details className="class-section" open={open}>
       <summary>
-        {group.classLabel}{" "}
-        <span className="muted small">({group.permutations.length} signs)</span>
+        {group.classLabel}
       </summary>
       <div className="table-scroll">
         <table className="files">
@@ -44,12 +43,7 @@ export function ClassSection({
                     {staleSet.has(p.user) && (
                       <>
                         {" "}
-                        <Badge
-                          tone="warn"
-                          title={`Carried forward from run ${p.sourceRunId}`}
-                        >
-                          stale
-                        </Badge>
+                        <Badge title={`From run ${p.sourceRunId}`}>old</Badge>
                       </>
                     )}
                   </th>

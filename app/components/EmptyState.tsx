@@ -6,20 +6,13 @@ export function EmptyState({
   missingPasswordCount: number;
 }) {
   return (
-    <section className="panel empty">
-      <h2>No data yet</h2>
-      {configOk ? (
-        <p>
-          Nothing has been generated. Press <strong>Generate now</strong> to
-          derive the first set — it takes about 8 minutes.
-        </p>
-      ) : (
-        <p className="error">
-          The server is missing {missingPasswordCount} account password
-          {missingPasswordCount === 1 ? "" : "s"}, so it cannot derive anything
-          yet.
-        </p>
-      )}
+    <section>
+      <h2>Downloads</h2>
+      <p>
+        {configOk
+          ? "Nothing generated yet."
+          : `Unavailable: ${missingPasswordCount} of 54 account passwords missing from the server config.`}
+      </p>
     </section>
   );
 }

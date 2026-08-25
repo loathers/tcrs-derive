@@ -99,16 +99,14 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         />
       )}
 
-      <footer className="footer">
+      <hr />
+      <footer className="muted small">
         <p>
-          Derived with KoLmafia&apos;s <code>tcrs derive</code> across all 54
-          class &times; sign permutations. Files are tab-separated:
-          <code> id · name · size · ? · modifiers</code>.
+          Tab-separated: <code>id · name · size · ? · modifiers</code>. URLs are
+          stable and support <code>ETag</code> and <code>Range</code>.
         </p>
         <p>
-          Scripted access:{" "}
-          <code>curl -O https://…/api/download/file/TCRS_Sauceror_Vole.txt</code>{" "}
-          — URLs are stable and support <code>ETag</code>/<code>Range</code>.
+          <code>curl -O .../api/download/file/TCRS_Sauceror_Vole.txt</code>
         </p>
       </footer>
     </main>
@@ -122,12 +120,12 @@ function GenerateError({
 }) {
   const message =
     error.error === "already_running"
-      ? "A run is already in progress — its progress is shown above."
+      ? "Already running."
       : error.error === "cooldown"
-        ? "Too soon: a run has happened recently."
+        ? "Too soon."
         : error.error === "misconfigured"
-          ? `Server is not configured to run: ${error.detail}`
-          : `Not enough free disk to run safely.`;
+          ? `Misconfigured: ${error.detail}`
+          : "Not enough free disk.";
   return (
     <p className="error" role="alert">
       {message}

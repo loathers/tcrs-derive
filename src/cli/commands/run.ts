@@ -32,6 +32,7 @@ import {
   type RunManifest,
 } from "#core/staging.server";
 import { permutationForFile } from "#core/permutations";
+import { buildZip } from "#server/zip.server";
 import { createPlainReporter, formatSummaryTable } from "../plain.ts";
 import { renderChart } from "../render.tsx";
 
@@ -136,6 +137,10 @@ export async function runCommand(flags: CliFlags): Promise<number> {
       });
       const entries = mergeEntries(fresh, carried);
 
+      // Built inside the staging dir before the swap, exactly as the server does,
+      // so a dataset published from the CLI is not missing its archive.
+      const zip = await buildZip(result.staging, entries).catch(() => null);
+
       const manifest: RunManifest = {
         version: 1,
         id: result.runId,
@@ -150,7 +155,7 @@ export async function runCommand(flags: CliFlags): Promise<number> {
         mafiaBuild: result.mafiaBuild,
         results: result.results,
         entries,
-        zip: null,
+        zip,
         totalBytes: entries.reduce((n, e) => n + e.bytes, 0),
       };
       await writeManifest(result.staging, manifest);

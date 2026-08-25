@@ -5,16 +5,14 @@ import { RunSummary } from "./RunSummary.tsx";
 
 export function ProgressPanel({ run }: { run: RunSnapshot }) {
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h2>Generating</h2>
-        <CancelButton />
-      </div>
+    <section>
+      <h2>Running</h2>
       <RunSummary state={run.state} />
       <ProgressGrid state={run.state} />
       {run.state.warmup === "running" && (
-        <p className="muted small">Warming up shared data files…</p>
+        <p className="muted small">Warming up shared data files.</p>
       )}
+      <CancelButton />
     </section>
   );
 }

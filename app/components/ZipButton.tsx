@@ -1,22 +1,17 @@
 import type { DatasetSummary } from "../lib/api-types.ts";
 import { formatBytes } from "../lib/format.ts";
 
-/**
- * A plain anchor, not a fetch() — so the browser gives native download progress,
- * resume, and "save as" for a ~14MB file.
- */
+/** A plain anchor, so the browser handles progress, resume and "save as". */
 export function ZipButton({ dataset }: { dataset: DatasetSummary }) {
   if (dataset.zip === null) {
-    return (
-      <p className="muted small">
-        The combined archive is unavailable for this run; individual files below
-        still work.
-      </p>
-    );
+    return <p className="muted small">Zip unavailable for this run.</p>;
   }
   return (
-    <a className="primary" href={dataset.zip.url} download>
-      Download all &middot; {formatBytes(dataset.zip.bytes)} (zip)
-    </a>
+    <p>
+      <a href={dataset.zip.url} download>
+        Download all {dataset.fileCount} files
+      </a>{" "}
+      ({formatBytes(dataset.zip.bytes)} zip)
+    </p>
   );
 }
