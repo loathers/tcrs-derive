@@ -12,7 +12,9 @@ export function ProgressPanel({ run }: { run: RunSnapshot }) {
       {run.state.warmup === "running" && (
         <p className="muted small">Warming up shared data files.</p>
       )}
-      <CancelButton />
+      <div className="button-row">
+        <CancelButton />
+      </div>
     </section>
   );
 }

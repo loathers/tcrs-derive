@@ -120,6 +120,18 @@ form {
   display: inline;
 }
 
+/* Sibling forms sit side by side. They cannot be nested: a form may not contain
+   another form. */
+.button-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-bottom: 0.8em;
+}
+.button-row form {
+  margin: 0;
+}
+
 /* --- download tables ----------------------------------------------------- */
 .table-scroll {
   overflow-x: auto;

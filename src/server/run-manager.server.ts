@@ -264,6 +264,11 @@ export class RunManager {
     this.#lock = null;
   }
 
+  /** Clear the cooldown. Guarded by the route, which does not exist in prod. */
+  async clearCooldown(): Promise<void> {
+    await this.#o.store.clearAttempts();
+  }
+
   async status(): Promise<StatusResponse> {
     const dataset = await this.#dataset();
     return this.#statusFrom(dataset);
@@ -488,6 +493,7 @@ export class RunManager {
             },
       lastAttempt: last,
       permutationCount: ALL_PERMUTATIONS.length,
+      dev: process.env["NODE_ENV"] !== "production",
     };
   }
 

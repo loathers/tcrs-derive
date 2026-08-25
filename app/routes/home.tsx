@@ -9,12 +9,12 @@
  * and gets 409/429 semantics for free.
  */
 
-import { useFetcher, useRevalidator } from "react-router";
+import { useRevalidator } from "react-router";
 import { useEffect, useRef } from "react";
 import type { Route } from "./+types/home";
-import type { GenerateResponse } from "../lib/api-types.ts";
 import { Header } from "../components/Header.tsx";
 import { GenerateButton } from "../components/GenerateButton.tsx";
+import { ResetCooldownButton } from "../components/ResetCooldownButton.tsx";
 import { ProgressPanel } from "../components/ProgressPanel.tsx";
 import { DownloadPanel } from "../components/DownloadPanel.tsx";
 import { EmptyState } from "../components/EmptyState.tsx";
@@ -46,7 +46,6 @@ export async function loader(_: Route.LoaderArgs) {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const fetcher = useFetcher<GenerateResponse>();
   const revalidator = useRevalidator();
 
   // The stream owns live state. The loader owns the initial paint.
@@ -65,45 +64,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId]);
 
-  const submitting = fetcher.state !== "idle";
-  // A rejection means this page was out of date, so resync rather than reporting
-  // it. The button is disabled during a cooldown and a live run shows its own
-  // panel, so "too soon" and "already running" tell the reader nothing new.
-  const rejected = fetcher.data && !fetcher.data.accepted ? fetcher.data : null;
-  useEffect(() => {
-    if (rejected && revalidator.state === "idle") revalidator.revalidate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rejected?.error]);
-
-  // Only what the reader cannot work out from the page itself.
-  const blocker =
-    rejected &&
-    (rejected.error === "misconfigured" ||
-      rejected.error === "insufficient_disk")
-      ? rejected
-      : null;
 
   return (
     <main className="wrap">
       <Header
-        status={status}
         connection={connection}
         permutationCount={status.permutationCount}
       />
-
-      {/* Posts to the resource route, so it works without JS and matches the
-          documented POST /api/generate API. */}
-      <fetcher.Form method="post" action="/api/generate">
-        <GenerateButton
-          cooldown={status.cooldown}
-          serverNow={status.now}
-          running={status.run !== null}
-          submitting={submitting}
-        />
-        {blocker && <GenerateError error={blocker} />}
-      </fetcher.Form>
-
-      {status.run !== null && <ProgressPanel run={status.run} />}
 
       {loaderData.files === null ? (
         <EmptyState
@@ -118,23 +85,18 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         />
       )}
 
+      {/* One section, two bodies. While a run is happening the progress replaces
+          the controls rather than appearing below them. */}
+      {status.run !== null ? (
+        <ProgressPanel run={status.run} />
+      ) : (
+        <GenerateButton
+          cooldown={status.cooldown}
+          serverNow={status.now}
+          extra={status.dev ? <ResetCooldownButton /> : null}
+        />
+      )}
     </main>
   );
 }
 
-function GenerateError({
-  error,
-}: {
-  error: Extract<
-    GenerateResponse,
-    { accepted: false; error: "misconfigured" | "insufficient_disk" }
-  >;
-}) {
-  return (
-    <p className="error" role="alert">
-      {error.error === "misconfigured"
-        ? `Cannot run: ${error.detail}`
-        : "Cannot run: not enough free disk."}
-    </p>
-  );
-}

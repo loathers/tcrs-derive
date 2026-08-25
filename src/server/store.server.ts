@@ -170,6 +170,17 @@ export class Store {
     await this.#persist();
   }
 
+  /**
+   * Forget every recorded attempt, which clears the cooldown.
+   *
+   * Leaves currentRunId and the published data alone: this is about the gate, not
+   * the dataset. Only reachable from the dev-only route.
+   */
+  async clearAttempts(): Promise<void> {
+    this.#state = { ...this.#state, attempts: [], activeRunId: null };
+    await this.#persist();
+  }
+
   async setCurrent(runId: string): Promise<void> {
     this.#state = { ...this.#state, currentRunId: runId };
     await this.#persist();

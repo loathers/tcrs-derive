@@ -60,6 +60,9 @@ export interface StatusResponse {
   run: RunSnapshot | null;
   lastAttempt: AttemptSummary | null;
   permutationCount: number;
+  /** True in a dev build. Gates the cooldown-reset control, whose route does not
+   *  exist in production. */
+  dev: boolean;
 }
 
 export type GenerateResponse =
