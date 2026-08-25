@@ -120,6 +120,13 @@ button {
 button:disabled {
   color: #666;
 }
+
+/* Dev-only controls get a tint, so it is obvious at a glance which buttons do not
+   exist in production. Paired with a title and an off-screen label, since a
+   colour shift alone conveys nothing to a screen reader. */
+.dev-only {
+  filter: sepia(1) brightness(0.9) hue-rotate(250deg);
+}
 a.button {
   font-size: 1em;
 }

@@ -11,13 +11,15 @@ export function ResetCooldownButton() {
   const pending = fetcher.state !== "idle";
 
   return (
-    <fetcher.Form
-      method="post"
-      action="/api/reset-cooldown"
-      className="cancel"
-    >
-      <button type="submit" disabled={pending} title="Development only">
-        {pending ? "Resetting..." : "Reset cooldown (dev)"}
+    <fetcher.Form method="post" action="/api/reset-cooldown">
+      <button
+        type="submit"
+        className="dev-only"
+        disabled={pending}
+        title="Development only"
+      >
+        {pending ? "Resetting..." : "Reset cooldown"}
+        <span className="sr-only"> (development only)</span>
       </button>
     </fetcher.Form>
   );
