@@ -7,7 +7,7 @@
  * terminal chart.
  */
 
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { reduceRunState } from "#core/state";
 import type { ServerEvent, StatusResponse } from "../lib/api-types.ts";
 
@@ -65,6 +65,19 @@ export function useRunStream(initial: StatusResponse) {
     status: initial,
     connection: "connecting" as Connection,
   });
+
+  /**
+   * Until this flips, callers see EXACTLY what the server rendered.
+   *
+   * Hydration compares the first client render against the server HTML, and React
+   * cannot patch mismatched attributes. Any live input reaching that first render
+   * is therefore a bug, and this stream is live by definition: a snapshot can
+   * arrive while hydration is still in flight and change the tree underneath it.
+   * Gating on mount makes the first render deterministic by construction, which
+   * is cheaper than auditing every consumer for non-determinism.
+   */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // Buffer patches and flush on an animation frame. A burst from several
   // concurrent JVMs would otherwise re-render 54 cells per event. Only the folded
@@ -145,5 +158,8 @@ export function useRunStream(initial: StatusResponse) {
     };
   }, []);
 
-  return { status: state.status, connection: state.connection };
+  return {
+    status: mounted ? state.status : initial,
+    connection: mounted ? state.connection : "connecting",
+  };
 }
