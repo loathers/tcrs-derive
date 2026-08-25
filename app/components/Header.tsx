@@ -1,6 +1,6 @@
 import type { Connection } from "../hooks/useRunStream.ts";
 import type { StatusResponse } from "../lib/api-types.ts";
-import { formatBytes, formatAbsolute, formatDuration } from "../lib/format.ts";
+import { formatBytes, formatDuration } from "../lib/format.ts";
 import { RelativeTime } from "./RelativeTime.tsx";
 
 export function Header({
@@ -26,8 +26,7 @@ export function Header({
         <p>Never generated.</p>
       ) : (
         <p>
-          Generated <RelativeTime iso={d.generatedAt} /> (
-          {formatAbsolute(d.generatedAt)}). {d.fileCount} files,{" "}
+          Generated <RelativeTime iso={d.generatedAt} />. {d.fileCount} files,{" "}
           {formatBytes(d.totalBytes)}
           {d.durationMs !== null && <>, took {formatDuration(d.durationMs)}</>}.
           KoLmafia {d.mafiaBuild ?? "version unknown"}.

@@ -139,6 +139,39 @@ function row(
 }
 
 /**
+ * A compact label for one cell of the web grid.
+ *
+ * A percentage where one is meaningful, a short word where it is not. The cell
+ * used to show the sign abbreviation, which the column header already says, so it
+ * carried no information. Colour already conveys the state, so the number is the
+ * part that was missing. Full detail stays in the cell's title/aria-label.
+ */
+export function cellLabel(p: PermState): string {
+  const s = p.status;
+  switch (s.kind) {
+    case "queued":
+      return "";
+    case "skipped":
+      return "skip";
+    case "done":
+      return "100%";
+    case "failed":
+      return "fail";
+    case "retrying":
+      return "retry";
+    case "stalled":
+      return "stall";
+    case "login":
+      return "0%";
+    case "deriving":
+      // The cafe phases report no progress and are the last sliver of the work,
+      // so they show the same near-complete number the items phase caps at.
+      if (s.phase !== "items") return "99%";
+      return s.progress === null ? "0%" : `${percentFor(s.progress)}%`;
+  }
+}
+
+/**
  * `%-12s [bar] status` (run-all.sh:200). The longest username is 11 chars, so
  * padEnd(12) always pads, identical to printf's %-12s.
  */

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BAR_WIDTH,
+  cellLabel,
   formatRow,
   makeBar,
   percentFor,
@@ -185,5 +186,63 @@ describe("summaryLine", () => {
         skipped: 52,
       }),
     ).toBe("Overall: 0/54 done  (2 running, 0 failed, 0 queued, 52 skipped)");
+  });
+});
+
+describe("cellLabel", () => {
+  it("shows a percentage while deriving items", () => {
+    expect(
+      cellLabel(
+        perm({
+          kind: "deriving",
+          phase: "items",
+          progress: { done: 4530, total: 12076 },
+        }),
+      ),
+    ).toBe("37%");
+  });
+
+  it("shows 0% before the first progress line, not a full bar", () => {
+    expect(
+      cellLabel(perm({ kind: "deriving", phase: "items", progress: null })),
+    ).toBe("0%");
+  });
+
+  it("shows near-complete for the cafe phases, which report no progress", () => {
+    expect(
+      cellLabel(perm({ kind: "deriving", phase: "cafe_booze", progress: null })),
+    ).toBe("99%");
+    expect(
+      cellLabel(perm({ kind: "deriving", phase: "cafe_food", progress: null })),
+    ).toBe("99%");
+  });
+
+  it("uses words where a percentage would be meaningless", () => {
+    expect(cellLabel(perm({ kind: "done" }))).toBe("100%");
+    expect(cellLabel(perm({ kind: "failed", copied: 0, reason: "login" }))).toBe(
+      "fail",
+    );
+    expect(
+      cellLabel(perm({ kind: "retrying", nextAttempt: 2, waitUntil: 0 })),
+    ).toBe("retry");
+    expect(cellLabel(perm({ kind: "stalled" }))).toBe("stall");
+    expect(cellLabel(perm({ kind: "skipped", reason: "resume" }))).toBe("skip");
+  });
+
+  it("is empty when a permutation has not started", () => {
+    // An empty cell reads as "nothing happening here" at a glance.
+    expect(cellLabel(perm({ kind: "queued" }))).toBe("");
+  });
+
+  it("never just repeats the column header", () => {
+    // The cell used to render the sign abbreviation, which the header already
+    // says, so it carried no information.
+    for (const status of [
+      { kind: "queued" } as const,
+      { kind: "done" } as const,
+      { kind: "deriving", phase: "items", progress: null } as const,
+    ]) {
+      expect(cellLabel(perm(status))).not.toContain("Wal");
+    }
   });
 });

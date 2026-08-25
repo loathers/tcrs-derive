@@ -1,15 +1,15 @@
-import { rowView } from "#core/present";
+import { cellLabel, rowView } from "#core/present";
 import type { PermState } from "#core/state";
 
 /**
  * One cell of the 6x9 grid.
  *
- * Uses the SHARED presenter, so the colour, fill and tooltip derive from exactly
- * the same RowView the ink chart renders as text.
+ * Uses the SHARED presenter, so the colour, fill and label derive from the same
+ * RowView the ink chart renders as text.
  */
 export function PermutationCell({ perm }: { perm: PermState }) {
   const view = rowView(perm);
-  const label = `${perm.classLabel} / ${perm.signCap}, ${view.status}`;
+  const label = `${perm.classLabel} / ${perm.signCap}: ${view.status}`;
 
   return (
     <div
@@ -25,7 +25,7 @@ export function PermutationCell({ perm }: { perm: PermState }) {
           : undefined
       }
     >
-      <span className="cell-sign">{perm.signCap.slice(0, 3)}</span>
+      {cellLabel(perm)}
     </div>
   );
 }

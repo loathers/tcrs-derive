@@ -58,6 +58,16 @@ hr {
   margin: 2em 0 1.5em;
 }
 
+/* Borrow the dotted underline browsers give <abbr title>, so a hoverable
+   timestamp looks hoverable. <time> is the correct element here, so it gets the
+   convention rather than the tag. */
+time[title],
+abbr[title] {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+  cursor: help;
+}
+
 .muted {
   color: #555;
 }

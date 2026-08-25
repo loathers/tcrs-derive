@@ -66,7 +66,22 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   }, [runId]);
 
   const submitting = fetcher.state !== "idle";
-  const error = fetcher.data && !fetcher.data.accepted ? fetcher.data : null;
+  // A rejection means this page was out of date, so resync rather than reporting
+  // it. The button is disabled during a cooldown and a live run shows its own
+  // panel, so "too soon" and "already running" tell the reader nothing new.
+  const rejected = fetcher.data && !fetcher.data.accepted ? fetcher.data : null;
+  useEffect(() => {
+    if (rejected && revalidator.state === "idle") revalidator.revalidate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rejected?.error]);
+
+  // Only what the reader cannot work out from the page itself.
+  const blocker =
+    rejected &&
+    (rejected.error === "misconfigured" ||
+      rejected.error === "insufficient_disk")
+      ? rejected
+      : null;
 
   return (
     <main className="wrap">
@@ -85,7 +100,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           running={status.run !== null}
           submitting={submitting}
         />
-        {error && <GenerateError error={error} />}
+        {blocker && <GenerateError error={blocker} />}
       </fetcher.Form>
 
       {status.run !== null && <ProgressPanel run={status.run} />}
@@ -103,16 +118,6 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         />
       )}
 
-      <hr />
-      <footer className="muted small">
-        <p>
-          Tab-separated: <code>id · name · size · ? · modifiers</code>. URLs are
-          stable and support <code>ETag</code> and <code>Range</code>.
-        </p>
-        <p>
-          <code>curl -O .../api/download/file/TCRS_Sauceror_Vole.txt</code>
-        </p>
-      </footer>
     </main>
   );
 }
@@ -120,19 +125,16 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 function GenerateError({
   error,
 }: {
-  error: Extract<GenerateResponse, { accepted: false }>;
+  error: Extract<
+    GenerateResponse,
+    { accepted: false; error: "misconfigured" | "insufficient_disk" }
+  >;
 }) {
-  const message =
-    error.error === "already_running"
-      ? "Already running."
-      : error.error === "cooldown"
-        ? "Too soon."
-        : error.error === "misconfigured"
-          ? `Misconfigured: ${error.detail}`
-          : "Not enough free disk.";
   return (
     <p className="error" role="alert">
-      {message}
+      {error.error === "misconfigured"
+        ? `Cannot run: ${error.detail}`
+        : "Cannot run: not enough free disk."}
     </p>
   );
 }

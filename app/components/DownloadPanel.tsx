@@ -15,22 +15,16 @@ export function DownloadPanel({
     <section>
       <h2>Downloads</h2>
       {dataset !== null && <ZipButton dataset={dataset} />}
-      <p className="muted small">
-        Three files per combination: items, cafe booze, cafe food. Goes in
-        KoLmafia&rsquo;s <code>data/</code>.
-        {stale.length > 0 && (
-          <>
-            {" "}
-            {stale.length} marked <em>old</em> failed the last run and are
-            carried over from the previous one.
-          </>
-        )}
-      </p>
+      {stale.length > 0 && (
+        <p className="muted small">
+          {stale.length} marked <em>old</em> failed the last run and are carried
+          over from the previous one.
+        </p>
+      )}
       <DownloadTable files={files} stale={stale} />
       {files.sums !== null && (
         <p className="small">
-          Checksums: <a href={files.sums.url}>{files.sums.name}</a>. Verify with{" "}
-          <code>sha256sum -c</code>.
+          Checksums: <a href={files.sums.url}>{files.sums.name}</a>
         </p>
       )}
     </section>
