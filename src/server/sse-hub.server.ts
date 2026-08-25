@@ -35,8 +35,12 @@ export function sseHandler(manager: RunManager) {
     const send = (event: ServerEvent) => {
       // If the client is gone, stop writing rather than buffering forever.
       if (res.writableEnded) return;
+      // Deliberately NOT sending an `event:` line. A named SSE event is only
+      // delivered to addEventListener("<name>"), never to onmessage, so naming
+      // them meant the browser silently received nothing and the page only
+      // updated on a full reload. The type is already in the payload, so leaving
+      // frames unnamed gives one code path that cannot miss a future type.
       res.write(`id: ${event.seq}\n`);
-      res.write(`event: ${event.type}\n`);
       res.write(`data: ${JSON.stringify(event)}\n\n`);
     };
 

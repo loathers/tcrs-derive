@@ -10,7 +10,7 @@
  */
 
 import { useFetcher, useRevalidator } from "react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Route } from "./+types/home";
 import type { GenerateResponse } from "../lib/api-types.ts";
 import { Header } from "../components/Header.tsx";
@@ -52,12 +52,16 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   // The stream owns live state. The loader owns the initial paint.
   const { status, connection } = useRunStream(loaderData.status);
 
-  // When a run finishes, refresh the loader so the download table and the
-  // last-generated time update without a page reload.
+  // When a run FINISHES, refresh the loader so the download table and the
+  // last-generated time update without a page reload. Keyed on the transition,
+  // not on the current value: `runId === null` is also true on first load, so a
+  // plain check revalidated once on every page view for nothing.
   const runId = status.run?.runId ?? null;
+  const previousRunId = useRef(runId);
   useEffect(() => {
-    if (runId === null && revalidator.state === "idle") revalidator.revalidate();
-    // Only when a run transitions away from being active.
+    const ended = previousRunId.current !== null && runId === null;
+    previousRunId.current = runId;
+    if (ended && revalidator.state === "idle") revalidator.revalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId]);
 
