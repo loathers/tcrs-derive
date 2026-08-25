@@ -1,0 +1,16 @@
+
+KoLmafia r29131-M
+Build main-3324b7b-M 26.0.1 (Eclipse Adoptium 26.0.1+8) Mac OS X aarch64 26.5.2
+
+Currently Running on Mac OS X
+Local Directory is /tmp/tcrs-work
+Using Java 26.0.2
+
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.fusesource.jansi.internal.JansiLoader in an unnamed module (file:/home/tcrs/Projects/tcrs-derive/KoLmafia.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+
+username: Invalid login.
+

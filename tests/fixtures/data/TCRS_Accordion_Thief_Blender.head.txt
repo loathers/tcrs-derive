@@ -1,0 +1,40 @@
+1	seal-clubbing club	0		
+2	seal tooth	0		
+3	Herculean helmet turtle	0		Experience (Muscle): +1, Familiar Effect: "atk, cap 2"
+4	turtle totem	0		
+5	pasta spoon	0		
+6	brainy ravioli hat	0		Mysticality: +5, Familiar Effect: "atk, cap 2"
+7	blinking saucepan	0		
+8	spices	0		
+9	bouncing steel-toed disco mask	0		Damage Reduction: 9, Familiar Effect: "atk, cap 2"
+10	disco ball	0		
+11	stolen accordion	0		Song Duration: 5
+12	mariachi pants	0		Familiar Effect: "8xPotato, cap 2"
+14	dried gray moxie weed	1		
+15	dehydrated wobbly bouncing strongness elixir	1		
+16	denatured ghostly magicalness-in-a-can	1		
+17	decent squat noodles	3	good	
+18	tortoise's blessing	0		
+19	wholesome asparagus knife	0		Maximum HP Percent: +10
+20	shaking Kentucky-style derby	0		Familiar Effect: "atk, cap 5"
+21	blue sweet ninja sword	0		
+22	studded boxer shorts	0		Familiar Effect: "atk, 4xVolley, cap 5"
+23	chewing gum on a string	0		
+24	ten-leaf clover	0		
+25	meat paste	0		
+26	Dolphin King's map	0		
+27	spider web	0		
+28	really spider web	0		
+29	shaking really really spider web	0		
+30	rock	0		
+31	narrow spinning seal-toothed rock	0		
+32	upside-down frightening Bjorn's Hammer	0		Spooky Damage: +5, Class: "Seal Clubber"
+33	snorkel	0		Familiar Effect: "atk, cap 2"
+34	double-paned Dolphin King's crown	0		Cold Resistance: +5, Familiar Effect: "atk, 2xGhuol, cap 8"
+35	shaking Knob Goblin scimitar of vim and vigor	0		Maximum HP Percent: +50
+36	pulsating boxer's Knob Goblin tongs	0		Muscle Percent: +10
+37	squat smooth viking helmet	0		Moxie: +15, Familiar Effect: "atk, cap 5"
+38	mirror therapeutic Knob Goblin pants	0		HP Regen Min: 5, HP Regen Max: 7, Familiar Effect: "atk, 5xPotato, cap 6"
+39	pretty flower	0		
+40	casino pass	0		
+41	perfectly mixed enchanted weak ice-cold Sir Schlitz	2	EPIC	Effect: "Meadulla Oblongota", Effect Duration: 15

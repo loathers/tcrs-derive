@@ -1,0 +1,178 @@
+=== attempt 1/3 ===
+
+KoLmafia r29131-M
+Build main-3324b7b-M 26.0.1 (Eclipse Adoptium 26.0.1+8) Mac OS X aarch64 26.5.2
+
+Currently Running on Mac OS X
+Local Directory is /tmp/tcrs-work
+Using Java 26.0.2
+
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.fusesource.jansi.internal.JansiLoader in an unnamed module (file:/home/tcrs/Projects/tcrs-derive/KoLmafia.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+
+username: password: 
+Sending login request...
+(file not found)
+Ping test: average delay is 156.00 msecs.
+Initializing session for at_blender...
+Loading character status...
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.alibaba.fastjson2.util.JDKUtils (file:/home/tcrs/Projects/tcrs-derive/KoLmafia.jar)
+WARNING: Please consider reporting this to the maintainers of class com.alibaba.fastjson2.util.JDKUtils
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+Refreshing session data...
+Synchronizing moon data...
+Retrieving character data...
+Local file TCRS_Accordion_Thief_Blender.txt does not exist.
+IO Exception for TCRS_Accordion_Thief_Blender.txt: java.io.FileNotFoundException: /tmp/tcrs-work (No such file or directory)
+No TCRS data is available for Accordion Thief/Blender. Would you like to derive it? (This will take a long time, but you only have to do it once.)
+(Y/N, leave blank to choose N)
+Error during session initialization
+
+Unable to invoke no
+
+Unable to invoke no
+
+Deriving TCRS item adjustments for all real items...
+Progress: 1/12070
+Progress: 101/12070
+Progress: 201/12070
+Progress: 301/12070
+Progress: 401/12070
+Progress: 501/12070
+Progress: 601/12070
+Progress: 701/12070
+Progress: 801/12070
+Progress: 901/12070
+Progress: 1001/12070
+Progress: 1101/12070
+Progress: 1201/12070
+Progress: 1301/12070
+Progress: 1401/12070
+Progress: 1501/12070
+Progress: 1601/12070
+Progress: 1701/12070
+Progress: 1801/12070
+Progress: 1901/12070
+Progress: 2001/12070
+Progress: 2101/12070
+Progress: 2201/12070
+Progress: 2301/12070
+Progress: 2401/12070
+Progress: 2501/12070
+Progress: 2601/12070
+Progress: 2701/12070
+Progress: 2801/12070
+Progress: 2901/12070
+Progress: 3001/12070
+Progress: 3101/12070
+Progress: 3201/12070
+Progress: 3301/12070
+Progress: 3401/12070
+Progress: 3501/12070
+Progress: 3601/12070
+Progress: 3701/12070
+Progress: 3801/12070
+Progress: 3901/12070
+Progress: 4001/12070
+Progress: 4101/12070
+Progress: 4201/12070
+Progress: 4301/12070
+Progress: 4401/12070
+Progress: 4501/12070
+Progress: 4601/12070
+Progress: 4701/12070
+Progress: 4801/12070
+Progress: 4901/12070
+Progress: 5001/12070
+Progress: 5101/12070
+Progress: 5201/12070
+Progress: 5301/12070
+Progress: 5401/12070
+Progress: 5501/12070
+Progress: 5601/12070
+Progress: 5701/12070
+Progress: 5801/12070
+Progress: 5901/12070
+Progress: 6001/12070
+Progress: 6101/12070
+Progress: 6201/12070
+Progress: 6301/12070
+Progress: 6401/12070
+Progress: 6501/12070
+Progress: 6601/12070
+Progress: 6701/12070
+Progress: 6801/12070
+Progress: 6901/12070
+Progress: 7001/12070
+Progress: 7101/12070
+Progress: 7201/12070
+Progress: 7301/12070
+Progress: 7401/12070
+Progress: 7501/12070
+Progress: 7601/12070
+Progress: 7701/12070
+Progress: 7801/12070
+Progress: 7901/12070
+Progress: 8001/12070
+Progress: 8101/12070
+Progress: 8201/12070
+Progress: 8301/12070
+Progress: 8401/12070
+Progress: 8501/12070
+Progress: 8601/12070
+Progress: 8701/12070
+Progress: 8801/12070
+Progress: 8901/12070
+Progress: 9001/12070
+Progress: 9101/12070
+Progress: 9201/12070
+Progress: 9301/12070
+
+Progress: 9401/12070
+Progress: 9501/12070
+Progress: 9601/12070
+Progress: 9701/12070
+Progress: 9801/12070
+Progress: 9901/12070
+Progress: 10001/12070
+Progress: 10101/12070
+Progress: 10201/12070
+Progress: 10301/12070
+Progress: 10401/12070
+Progress: 10501/12070
+Progress: 10601/12070
+Progress: 10701/12070
+Progress: 10801/12070
+Progress: 10901/12070
+Progress: 11001/12070
+Progress: 11101/12070
+Progress: 11201/12070
+Progress: 11301/12070
+Progress: 11401/12070
+Progress: 11501/12070
+Progress: 11601/12070
+Progress: 11701/12070
+Progress: 11801/12070
+Progress: 11901/12070
+
+Progress: 12001/12070
+Done!
+Deriving TCRS item adjustments for all cafe booze items...
+Done!
+Deriving TCRS item adjustments for all cafe food items...
+Done!
+
+Wrote file TCRS_Accordion_Thief_Blender.txt
+Wrote file TCRS_Accordion_Thief_Blender_cafe_booze.txt
+Wrote file TCRS_Accordion_Thief_Blender_cafe_food.txt
+
+Preparing for logout...
+Sharing mall price data with other users...
+You have no updated price data to submit.
+Sending logout request...
+Logout request submitted.
+Logout completed.

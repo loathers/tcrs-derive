@@ -1,0 +1,175 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the 54-row chart > renders a completed run 1`] = `
+"sc_mongoose  [██████████] done
+sc_wallaby   [██████████] done
+sc_vole      [██████████] done
+sc_platypus  [██████████] done
+sc_opossum   [██████████] done
+sc_marmot    [██████████] done
+sc_wombat    [██████████] done
+sc_blender   [██████████] done
+sc_packrat   [██████████] done
+tt_mongoose  [██████████] done
+tt_wallaby   [██████████] done
+tt_vole      [██████████] done
+tt_platypus  [██████████] done
+tt_opossum   [██████████] done
+tt_marmot    [██████████] done
+tt_wombat    [██████████] done
+tt_blender   [██████████] done
+tt_packrat   [██████████] done
+pm_mongoose  [██████████] done
+pm_wallaby   [██████████] done
+pm_vole      [██████████] done
+pm_platypus  [██████████] done
+pm_opossum   [██████████] done
+pm_marmot    [██████████] done
+pm_wombat    [██████████] done
+pm_blender   [██████████] done
+pm_packrat   [██████████] done
+sa_mongoose  [██████████] done
+sa_wallaby   [██████████] done
+sa_vole      [██████████] done
+sa_platypus  [██████████] done
+sa_opossum   [██████████] done
+sa_marmot    [██████████] done
+sa_wombat    [██████████] done
+sa_blender   [██████████] done
+sa_packrat   [██████████] done
+db_mongoose  [██████████] done
+db_wallaby   [██████████] done
+db_vole      [██████████] done
+db_platypus  [██████████] done
+db_opossum   [██████████] done
+db_marmot    [██████████] done
+db_wombat    [██████████] done
+db_blender   [██████████] done
+db_packrat   [██████████] done
+at_mongoose  [██████████] done
+at_wallaby   [██████████] done
+at_vole      [██████████] done
+at_platypus  [██████████] done
+at_opossum   [██████████] done
+at_marmot    [██████████] done
+at_wombat    [██████████] done
+at_blender   [██████████] done
+at_packrat   [██████████] done
+Overall: 54/54 done  (0 running, 0 failed, 0 queued)"
+`;
+
+exports[`the 54-row chart > renders a fresh run as all-queued 1`] = `
+"sc_mongoose  [░░░░░░░░░░] queued
+sc_wallaby   [░░░░░░░░░░] queued
+sc_vole      [░░░░░░░░░░] queued
+sc_platypus  [░░░░░░░░░░] queued
+sc_opossum   [░░░░░░░░░░] queued
+sc_marmot    [░░░░░░░░░░] queued
+sc_wombat    [░░░░░░░░░░] queued
+sc_blender   [░░░░░░░░░░] queued
+sc_packrat   [░░░░░░░░░░] queued
+tt_mongoose  [░░░░░░░░░░] queued
+tt_wallaby   [░░░░░░░░░░] queued
+tt_vole      [░░░░░░░░░░] queued
+tt_platypus  [░░░░░░░░░░] queued
+tt_opossum   [░░░░░░░░░░] queued
+tt_marmot    [░░░░░░░░░░] queued
+tt_wombat    [░░░░░░░░░░] queued
+tt_blender   [░░░░░░░░░░] queued
+tt_packrat   [░░░░░░░░░░] queued
+pm_mongoose  [░░░░░░░░░░] queued
+pm_wallaby   [░░░░░░░░░░] queued
+pm_vole      [░░░░░░░░░░] queued
+pm_platypus  [░░░░░░░░░░] queued
+pm_opossum   [░░░░░░░░░░] queued
+pm_marmot    [░░░░░░░░░░] queued
+pm_wombat    [░░░░░░░░░░] queued
+pm_blender   [░░░░░░░░░░] queued
+pm_packrat   [░░░░░░░░░░] queued
+sa_mongoose  [░░░░░░░░░░] queued
+sa_wallaby   [░░░░░░░░░░] queued
+sa_vole      [░░░░░░░░░░] queued
+sa_platypus  [░░░░░░░░░░] queued
+sa_opossum   [░░░░░░░░░░] queued
+sa_marmot    [░░░░░░░░░░] queued
+sa_wombat    [░░░░░░░░░░] queued
+sa_blender   [░░░░░░░░░░] queued
+sa_packrat   [░░░░░░░░░░] queued
+db_mongoose  [░░░░░░░░░░] queued
+db_wallaby   [░░░░░░░░░░] queued
+db_vole      [░░░░░░░░░░] queued
+db_platypus  [░░░░░░░░░░] queued
+db_opossum   [░░░░░░░░░░] queued
+db_marmot    [░░░░░░░░░░] queued
+db_wombat    [░░░░░░░░░░] queued
+db_blender   [░░░░░░░░░░] queued
+db_packrat   [░░░░░░░░░░] queued
+at_mongoose  [░░░░░░░░░░] queued
+at_wallaby   [░░░░░░░░░░] queued
+at_vole      [░░░░░░░░░░] queued
+at_platypus  [░░░░░░░░░░] queued
+at_opossum   [░░░░░░░░░░] queued
+at_marmot    [░░░░░░░░░░] queued
+at_wombat    [░░░░░░░░░░] queued
+at_blender   [░░░░░░░░░░] queued
+at_packrat   [░░░░░░░░░░] queued
+Overall: 0/54 done  (0 running, 0 failed, 54 queued)"
+`;
+
+exports[`the 54-row chart > renders a mid-run frame covering every status at once 1`] = `
+"sc_mongoose  [██████████] done
+sc_wallaby   [█░░░░░░░░░]  18% items
+sc_vole      [█████████░]  91% items try 2/3
+sc_platypus  [██████████] cafe booze
+sc_opossum   [░░░░░░░░░░] login
+sc_marmot    [░░░░░░░░░░] stalled
+sc_wombat    [░░░░░░░░░░] retrying 2/3
+sc_blender   [▓▓▓▓▓▓▓▓▓▓] FAIL 0/3
+sc_packrat   [▓▓▓▓▓▓▓▓▓▓] FAIL 2/3
+tt_mongoose  [░░░░░░░░░░] skipped
+tt_wallaby   [░░░░░░░░░░] queued
+tt_vole      [░░░░░░░░░░] queued
+tt_platypus  [░░░░░░░░░░] queued
+tt_opossum   [░░░░░░░░░░] queued
+tt_marmot    [░░░░░░░░░░] queued
+tt_wombat    [░░░░░░░░░░] queued
+tt_blender   [░░░░░░░░░░] queued
+tt_packrat   [░░░░░░░░░░] queued
+pm_mongoose  [░░░░░░░░░░] queued
+pm_wallaby   [░░░░░░░░░░] queued
+pm_vole      [░░░░░░░░░░] queued
+pm_platypus  [░░░░░░░░░░] queued
+pm_opossum   [░░░░░░░░░░] queued
+pm_marmot    [░░░░░░░░░░] queued
+pm_wombat    [░░░░░░░░░░] queued
+pm_blender   [░░░░░░░░░░] queued
+pm_packrat   [░░░░░░░░░░] queued
+sa_mongoose  [░░░░░░░░░░] queued
+sa_wallaby   [░░░░░░░░░░] queued
+sa_vole      [░░░░░░░░░░] queued
+sa_platypus  [░░░░░░░░░░] queued
+sa_opossum   [░░░░░░░░░░] queued
+sa_marmot    [░░░░░░░░░░] queued
+sa_wombat    [░░░░░░░░░░] queued
+sa_blender   [░░░░░░░░░░] queued
+sa_packrat   [░░░░░░░░░░] queued
+db_mongoose  [░░░░░░░░░░] queued
+db_wallaby   [░░░░░░░░░░] queued
+db_vole      [░░░░░░░░░░] queued
+db_platypus  [░░░░░░░░░░] queued
+db_opossum   [░░░░░░░░░░] queued
+db_marmot    [░░░░░░░░░░] queued
+db_wombat    [░░░░░░░░░░] queued
+db_blender   [░░░░░░░░░░] queued
+db_packrat   [░░░░░░░░░░] queued
+at_mongoose  [░░░░░░░░░░] queued
+at_wallaby   [░░░░░░░░░░] queued
+at_vole      [░░░░░░░░░░] queued
+at_platypus  [░░░░░░░░░░] queued
+at_opossum   [░░░░░░░░░░] queued
+at_marmot    [░░░░░░░░░░] queued
+at_wombat    [░░░░░░░░░░] queued
+at_blender   [░░░░░░░░░░] queued
+at_packrat   [░░░░░░░░░░] queued
+Overall: 1/54 done  (6 running, 2 failed, 44 queued, 1 skipped)"
+`;

@@ -1,0 +1,64 @@
+{
+  "name": "tcrs-derive",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "yarn@4.18.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "tcrs": "./dist/cli.js"
+  },
+  "scripts": {
+    "dev": "node ./server.ts",
+    "dev:cli": "tsx src/cli/index.ts",
+    "build": "react-router build && tsup",
+    "start": "node ./server.ts",
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "tcrs": "tsx src/cli/index.ts",
+    "build:cli": "tsup"
+  },
+  "dependencies": {
+    "@react-router/express": "8.3.0",
+    "@react-router/node": "8.3.0",
+    "archiver": "^8.0.0",
+    "express": "^5.2.1",
+    "ink": "7.1.1",
+    "isbot": "^5",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-router": "8.3.0"
+  },
+  "devDependencies": {
+    "@react-router/dev": "8.3.0",
+    "@types/archiver": "^8",
+    "@types/express": "^5",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19",
+    "ink-testing-library": "^4.0.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  },
+  "imports": {
+    "#core/*": [
+      "./src/core/*.ts",
+      "./src/core/*"
+    ],
+    "#server/*": [
+      "./src/server/*.ts",
+      "./src/server/*"
+    ],
+    "#cli/*": [
+      "./src/cli/*.tsx",
+      "./src/cli/*.ts",
+      "./src/cli/*"
+    ]
+  }
+}

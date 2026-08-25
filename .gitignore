@@ -1,5 +1,32 @@
-.env
-out/
-logs/
-tcrs-out/
+# Anchored with a leading slash: a bare `logs/` also matches tests/fixtures/logs/,
+# which would silently untrack the committed log fixtures.
+/.env
+/out/
+/logs/
+/tcrs-out/
+/data/
 *.jar
+*.jar.bak*
+
+# KoLmafia writes its whole data tree into its CWD (-DuseCWDasROOT=true). Runs are
+# always rooted in data/work/<user>/, but an ad-hoc `java -jar KoLmafia.jar` from the
+# repo root drops these here.
+/ccs/
+/images/
+/relay/
+/scripts/
+/sessions/
+/settings/
+/DEBUG_*.txt
+
+node_modules/
+/.yarn/*
+!/.yarn/patches
+!/.yarn/plugins
+!/.yarn/releases
+!/.yarn/versions
+/build/
+/dist/
+/.react-router/
+*.tsbuildinfo
+.DS_Store

@@ -1,0 +1,246 @@
+import { afterEach, describe, expect, it } from "vitest";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdir, rm, readlink, readdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  carryForward,
+  createStaging,
+  indexFiles,
+  promote,
+  pruneRuns,
+  readCurrentManifest,
+  resolveCurrent,
+  runIdFor,
+  writeManifest,
+  writeSums,
+  type RunManifest,
+} from "#core/staging.server";
+import { permutationByUser } from "#core/permutations";
+
+const AT = permutationByUser("at_blender")!;
+const dirs: string[] = [];
+
+function tmp(): string {
+  const d = mkdtempSync(join(tmpdir(), "tcrs-staging-"));
+  dirs.push(d);
+  return d;
+}
+afterEach(async () => {
+  while (dirs.length) await rm(dirs.pop()!, { recursive: true, force: true });
+});
+
+function manifest(id: string, over: Partial<RunManifest> = {}): RunManifest {
+  return {
+    version: 1,
+    id,
+    startedAt: new Date(0).toISOString(),
+    finishedAt: new Date(1000).toISOString(),
+    outcome: "success",
+    durationMs: 1000,
+    concurrency: 4,
+    mafiaBuild: "r29131-M",
+    results: [],
+    entries: [],
+    zip: null,
+    totalBytes: 0,
+    ...over,
+  };
+}
+
+describe("runIdFor", () => {
+  it("produces a filesystem- and URL-safe id", () => {
+    const id = runIdFor(new Date("2026-08-24T09:15:03.123Z"));
+    expect(id).toBe("2026-08-24T09-15-03-123Z");
+    // No colons: legal on ext4 but breaks exfat/CIFS backups and needs shell
+    // quoting.
+    expect(id).not.toContain(":");
+    expect(encodeURIComponent(id)).toBe(id);
+  });
+});
+
+describe("the atomic swap", () => {
+  it("publishes a run and resolves current to it", async () => {
+    const data = tmp();
+    const staging = await createStaging(data, "run-1");
+    writeFileSync(join(staging.dataDir, AT.files[0]), "x");
+    await promote(data, "run-1");
+
+    expect(await resolveCurrent(data)).toBe(
+      await realish(join(data, "runs", "run-1")),
+    );
+  });
+
+  it("uses a RELATIVE symlink target, so the tree can be moved or bind-mounted", async () => {
+    const data = tmp();
+    await createStaging(data, "run-1");
+    await promote(data, "run-1");
+    expect(await readlink(join(data, "current"))).toBe(join("runs", "run-1"));
+  });
+
+  it("replaces an existing current with no window where it is absent", async () => {
+    const data = tmp();
+    await createStaging(data, "run-1");
+    await promote(data, "run-1");
+    await createStaging(data, "run-2");
+    await promote(data, "run-2");
+
+    expect(await readlink(join(data, "current"))).toBe(join("runs", "run-2"));
+    // No leftover temp link.
+    expect(existsSync(join(data, ".current.tmp"))).toBe(false);
+  });
+
+  it("returns null when nothing is published", async () => {
+    expect(await resolveCurrent(tmp())).toBeNull();
+  });
+
+  it("returns null for a dangling current link", async () => {
+    const data = tmp();
+    await createStaging(data, "run-1");
+    await promote(data, "run-1");
+    await rm(join(data, "runs", "run-1"), { recursive: true, force: true });
+    expect(await resolveCurrent(data)).toBeNull();
+  });
+});
+
+describe("pruneRuns", () => {
+  it("keeps only the named runs", async () => {
+    const data = tmp();
+    for (const id of ["run-1", "run-2", "run-3"]) await createStaging(data, id);
+    const removed = await pruneRuns(data, ["run-3"]);
+    expect(removed.sort()).toEqual(["run-1", "run-2"]);
+    expect(await readdir(join(data, "runs"))).toEqual(["run-3"]);
+  });
+
+  it("is a no-op when there is no runs dir yet", async () => {
+    expect(await pruneRuns(tmp(), [])).toEqual([]);
+  });
+});
+
+describe("manifests", () => {
+  it("round-trips through disk", async () => {
+    const data = tmp();
+    const staging = await createStaging(data, "run-1");
+    await writeManifest(staging, manifest("run-1"));
+    await promote(data, "run-1");
+
+    const read = await readCurrentManifest(data);
+    expect(read?.id).toBe("run-1");
+    expect(read?.mafiaBuild).toBe("r29131-M");
+  });
+
+  it("is written atomically, leaving no temp file", async () => {
+    const data = tmp();
+    const staging = await createStaging(data, "run-1");
+    await writeManifest(staging, manifest("run-1"));
+    expect(existsSync(join(staging.dir, "manifest.json.tmp"))).toBe(false);
+  });
+
+  it("rejects a manifest of an unknown version", async () => {
+    const data = tmp();
+    const staging = await createStaging(data, "run-1");
+    writeFileSync(
+      join(staging.dir, "manifest.json"),
+      JSON.stringify({ version: 99, id: "run-1" }),
+    );
+    await promote(data, "run-1");
+    expect(await readCurrentManifest(data)).toBeNull();
+  });
+});
+
+describe("indexFiles and writeSums", () => {
+  it("hashes and measures the files that exist", async () => {
+    const data = tmp();
+    const staging = await createStaging(data, "run-1");
+    writeFileSync(join(staging.dataDir, AT.files[0]), "hello");
+    writeFileSync(join(staging.dataDir, AT.files[1]), "");
+
+    const entries = await indexFiles(staging, "run-1", () => ({
+      user: AT.user,
+      kind: "items",
+    }));
+
+    // The zero-byte file must be excluded, matching the collect rule.
+    expect(entries.map((e) => e.name)).toEqual([AT.files[0]]);
+    expect(entries[0]!.bytes).toBe(5);
+    expect(entries[0]!.sha256).toBe(
+      "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+    );
+    expect(entries[0]!.sourceRunId).toBe("run-1");
+  });
+
+  it("writes SHA256SUMS.txt in sha256sum -c format", async () => {
+    const data = tmp();
+    const staging = await createStaging(data, "run-1");
+    writeFileSync(join(staging.dataDir, AT.files[0]), "hello");
+    const entries = await indexFiles(staging, "run-1", () => ({
+      user: AT.user,
+      kind: "items",
+    }));
+    await writeSums(staging, entries);
+
+    const sums = readFileSync(join(staging.dataDir, "SHA256SUMS.txt"), "utf8");
+    expect(sums).toBe(`${entries[0]!.sha256}  ${AT.files[0]}\n`);
+  });
+});
+
+describe("carryForward", () => {
+  it("fills a gap from the previous run and records its source", async () => {
+    // 53 fresh files plus one twelve-hour-old file beats a 404.
+    const data = tmp();
+    const prev = await createStaging(data, "run-1");
+    writeFileSync(join(prev.dataDir, AT.files[0]), "old but valid");
+    const prevManifest = manifest("run-1", {
+      entries: [
+        {
+          name: AT.files[0],
+          user: AT.user,
+          kind: "items",
+          bytes: 13,
+          sha256: "deadbeef",
+          sourceRunId: "run-1",
+        },
+      ],
+    });
+
+    const next = await createStaging(data, "run-2");
+    const carried = await carryForward(
+      next,
+      { dir: prev.dir, manifest: prevManifest },
+      [AT.files[0]],
+    );
+
+    expect(carried).toHaveLength(1);
+    // sourceRunId still points at the run that actually derived it, so the UI can
+    // mark the row stale.
+    expect(carried[0]!.sourceRunId).toBe("run-1");
+    expect(readFileSync(join(next.dataDir, AT.files[0]), "utf8")).toBe(
+      "old but valid",
+    );
+  });
+
+  it("carries nothing when there is no previous run", async () => {
+    const data = tmp();
+    const next = await createStaging(data, "run-1");
+    expect(await carryForward(next, null, [AT.files[0]])).toEqual([]);
+  });
+
+  it("skips a file the previous run also lacked", async () => {
+    const data = tmp();
+    const prev = await createStaging(data, "run-1");
+    const next = await createStaging(data, "run-2");
+    const carried = await carryForward(
+      next,
+      { dir: prev.dir, manifest: manifest("run-1") },
+      [AT.files[0]],
+    );
+    expect(carried).toEqual([]);
+  });
+});
+
+/** realpath, resolving macOS's /var -> /private/var symlink like the code does. */
+async function realish(p: string): Promise<string> {
+  const { realpath } = await import("node:fs/promises");
+  await mkdir(p, { recursive: true });
+  return realpath(p);
+}

@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+
+    "types": ["node", "vite/client"],
+    "rootDirs": [".", "./.react-router/types"],
+    "paths": {
+      "#core/*": ["./src/core/*"],
+      "#server/*": ["./src/server/*"],
+      "#cli/*": ["./src/cli/*"]
+    }
+  },
+  "include": [
+    "src", "app", "tests", "*.config.ts", "server.ts",
+    ".react-router/types/**/*"
+  ]
+}

@@ -1,0 +1,22 @@
+# Never bake secrets or 50MB of generated data into an image.
+.env
+data/
+out/
+tcrs-out/
+logs/
+*.jar
+
+node_modules/
+build/
+dist/
+.react-router/
+.git/
+.github/
+.yarn/cache/
+.yarn/install-state.gz
+
+# Keep the fixtures out of the image; they are for CI, not runtime.
+tests/
+
+*.log
+.DS_Store

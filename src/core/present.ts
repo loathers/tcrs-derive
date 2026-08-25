@@ -1,0 +1,156 @@
+/**
+ * The shared presenter — PURE, and used by BOTH the ink CLI and the React web UI.
+ *
+ * This file is what makes "two views, one core" real, and it is the answer to the
+ * ink-web question: rather than depending on an unmaintained shim to render ink
+ * components into a browser canvas, both views render from the same computed
+ * `RowView`. ink turns it into <Text>; the web turns it into styled DOM.
+ *
+ * The formats below reproduce run-all.sh:129-206 BYTE-EXACTLY, so
+ * tests/present.snapshot.test.ts can freeze today's chart and prove the port did
+ * not change what the operator sees.
+ */
+
+import type { PermState, RunSummary } from "./state.ts";
+
+/** run-all.sh:129. */
+export const BAR_WIDTH = 10;
+
+export const FILL_ACTIVE = "█"; // full block
+export const FILL_FAILED = "▓"; // dark shade
+export const FILL_EMPTY = "░"; // light shade
+
+export type Tone = "idle" | "active" | "ok" | "fail" | "warn";
+
+export interface RowView {
+  readonly user: string;
+  /** 0-100. Caps near 99 for the items phase — see percentFor(). */
+  readonly pct: number;
+  readonly fill: string;
+  readonly bar: string;
+  readonly status: string;
+  readonly tone: Tone;
+}
+
+/**
+ * Port of make_bar (run-all.sh:131-139): floor-divide into BAR_WIDTH cells, clamp,
+ * then pad with the empty glyph.
+ */
+export function makeBar(pct: number, fill: string, width = BAR_WIDTH): string {
+  const filled = Math.min(width, Math.max(0, Math.floor((pct * width) / 100)));
+  return fill.repeat(filled) + FILL_EMPTY.repeat(width - filled);
+}
+
+/**
+ * The percentage for a progress pair.
+ *
+ * Deliberately NOT clamped up to 100. mafia announces every 100 items and 12070
+ * isn't a multiple of 100, so the last line is always Progress: 12001/12070 and
+ * this tops out at 99. A bar that reaches 100% and then sits there through both
+ * cafe phases is a worse lie than 99%.
+ */
+export function percentFor(progress: { done: number; total: number }): number {
+  if (progress.total <= 0) return 0;
+  return Math.floor((progress.done * 100) / progress.total);
+}
+
+/** ` try 2/3`, or "" on the first attempt (run-all.sh:184-188). */
+function trySuffix(p: PermState): string {
+  return p.attempt > 1 ? ` try ${p.attempt}/${p.maxAttempts}` : "";
+}
+
+const PHASE_LABEL = {
+  items: "items",
+  cafe_booze: "cafe booze",
+  cafe_food: "cafe food",
+} as const;
+
+/**
+ * Compute one chart row.
+ *
+ * THE CAFE-PHASE RULE LIVES HERE, EXACTLY ONCE: the cafe phases report no
+ * progress, so they render a full bar labelled with the phase rather than a
+ * percentage. Belt and braces, the reducer also keeps `progress: null` for those
+ * phases (see state.ts), so a stale items percentage is unrepresentable rather
+ * than merely avoided.
+ */
+export function rowView(p: PermState): RowView {
+  const t = trySuffix(p);
+  const s = p.status;
+
+  switch (s.kind) {
+    case "done":
+      return row(p, 100, FILL_ACTIVE, "done", "ok");
+
+    case "failed":
+      return row(p, 100, FILL_FAILED, `FAIL ${s.copied}/3`, "fail");
+
+    case "queued":
+      return row(p, 0, FILL_EMPTY, "queued", "idle");
+
+    case "skipped":
+      return row(p, 100, FILL_EMPTY, "skipped", "idle");
+
+    case "deriving": {
+      if (s.phase !== "items") {
+        // cafe booze / cafe food report no progress at all, so show a full bar
+        // labelled with the phase rather than a percentage (run-all.sh:194).
+        return row(p, 100, FILL_ACTIVE, `${PHASE_LABEL[s.phase]}${t}`, "active");
+      }
+      // The items phase is the bulk and its percentage is meaningful. Before the
+      // first Progress: line it is legitimately 0 — the bash defaulted pct=0 the
+      // same way (run-all.sh:180), so the bar starts empty rather than full.
+      const pct = s.progress === null ? 0 : percentFor(s.progress);
+      // run-all.sh:193 — `printf '%3d%% items%s'`.
+      return row(
+        p,
+        pct,
+        FILL_ACTIVE,
+        `${String(pct).padStart(3)}% ${PHASE_LABEL[s.phase]}${t}`,
+        "active",
+      );
+    }
+
+    case "retrying":
+      return row(
+        p,
+        0,
+        FILL_ACTIVE,
+        `retrying ${s.nextAttempt}/${p.maxAttempts}`,
+        "warn",
+      );
+
+    case "stalled":
+      return row(p, 0, FILL_ACTIVE, `stalled${t}`, "warn");
+
+    case "login":
+      return row(p, 0, FILL_ACTIVE, `login${t}`, "active");
+  }
+}
+
+function row(
+  p: PermState,
+  pct: number,
+  fill: string,
+  status: string,
+  tone: Tone,
+): RowView {
+  return { user: p.user, pct, fill, bar: makeBar(pct, fill), status, tone };
+}
+
+/**
+ * `%-12s [bar] status` (run-all.sh:200). The longest username is 11 chars, so
+ * padEnd(12) always pads — identical to printf's %-12s.
+ */
+export function formatRow(v: RowView): string {
+  return `${v.user.padEnd(12)} [${v.bar}] ${v.status}`;
+}
+
+/**
+ * run-all.sh:204-205. Note the TWO spaces before the parenthesis — the bash format
+ * string had them and the snapshot test pins them.
+ */
+export function summaryLine(s: RunSummary): string {
+  const skipped = s.skipped > 0 ? `, ${s.skipped} skipped` : "";
+  return `Overall: ${s.done}/${s.total} done  (${s.running} running, ${s.failed} failed, ${s.queued} queued${skipped})`;
+}
