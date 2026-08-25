@@ -38,7 +38,9 @@ export function formatRelative(iso: string, nowMs: number): string {
   const then = Date.parse(iso);
   if (!Number.isFinite(then)) return "unknown";
   const deltaSec = Math.round((then - nowMs) / 1000);
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  // Locale pinned: Node and the browser otherwise disagree, and this renders on
+  // both sides.
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
   const table: [Intl.RelativeTimeFormatUnit, number][] = [
     ["second", 60],
     ["minute", 60],
@@ -54,7 +56,21 @@ export function formatRelative(iso: string, nowMs: number): string {
   return rtf.format(value, "year");
 }
 
+/**
+ * A fixed UTC timestamp, deliberately NOT localised.
+ *
+ * toLocaleString() renders differently on the server and in the browser (Node's
+ * locale versus the visitor's), which is a hydration mismatch React cannot patch.
+ * It is also ambiguous: 8/25 and 25/08 are the same instant written two ways. A
+ * single unambiguous UTC rendering avoids both problems, and the relative time
+ * next to it already covers "how long ago".
+ */
 export function formatAbsolute(iso: string): string {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "unknown" : d.toLocaleString();
+  if (Number.isNaN(d.getTime())) return "unknown";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ` +
+    `${p(d.getUTCHours())}:${p(d.getUTCMinutes())} UTC`
+  );
 }
