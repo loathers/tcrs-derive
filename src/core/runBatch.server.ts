@@ -71,7 +71,13 @@ export interface BatchResult {
   cancelled: boolean;
   results: PermutationResult[];
   mafiaBuild: string | null;
-  /** Names of the 162 expected files that this run did NOT produce. */
+  /**
+   * Files THIS RUN'S SELECTION should have produced but did not, so it reports
+   * what the run failed at. Deliberately not what publishRun fills gaps from:
+   * that needs every file the dataset should contain, which for `--only` is a much
+   * larger set. Wiring the two together published a partial dataset and pruned the
+   * rest of it away, so publishRun computes its own.
+   */
   missing: string[];
   /** What this run actually produced, hashed once. Handed to publishRun so the
    *  dataset is not read and hashed a second time. */

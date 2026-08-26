@@ -336,9 +336,11 @@ export interface PublishInput {
    * permanently empty.
    */
   entries: readonly ManifestEntry[];
-  /** Expected files this run did not produce, to be filled from the last one. */
-  missing: readonly string[];
-  results: PermutationResult[];
+  /**
+   * This run's own results. Permutations it never attempted are filled in from the
+   * previous run alongside their files, so a partial run does not erase them.
+   */
+  results: readonly PermutationResult[];
   mafiaBuild: string | null;
   concurrency: number;
   startedAt: number;
@@ -371,12 +373,19 @@ export async function publishRun(
   const previousDir = await resolveCurrent(dataDir);
   const previousManifest = previousDir ? await readManifest(previousDir) : null;
 
+  // Every file the dataset should contain that this run did not produce, whether
+  // the permutation failed or was never selected. Derived here rather than passed
+  // in because a caller that scoped it to its own selection published a partial
+  // dataset and pruned the rest of it away.
+  const produced = new Set(input.entries.map((e) => e.name));
+  const missing = ALL_FILE_NAMES.filter((n) => !produced.has(n));
+
   const carried =
     previousDir && previousManifest
       ? await carryForward(
           input.staging,
           { dir: previousDir, manifest: previousManifest },
-          input.missing,
+          missing,
         )
       : [];
 
@@ -386,6 +395,18 @@ export async function publishRun(
   const entries = [...byName.values()].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
+
+  // Results follow their files. resumableUsers joins entries against results, so a
+  // permutation whose files were carried but whose result was dropped would look
+  // un-derived and be run again from scratch on the next --resume.
+  const attempted = new Set(input.results.map((r) => r.user));
+  const carriedUsers = new Set(carried.map((e) => e.user));
+  const results = [
+    ...input.results,
+    ...(previousManifest?.results ?? []).filter(
+      (r) => !attempted.has(r.user) && carriedUsers.has(r.user),
+    ),
+  ];
 
   // After the merge, so the checksums cover carried files too.
   await writeSums(input.staging, entries);
@@ -401,7 +422,7 @@ export async function publishRun(
     durationMs: input.finishedAt - input.startedAt,
     concurrency: input.concurrency,
     mafiaBuild: input.mafiaBuild,
-    results: input.results,
+    results,
     entries,
     zip,
     totalBytes: entries.reduce((n, e) => n + e.bytes, 0),

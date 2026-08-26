@@ -20,6 +20,19 @@ import {
 import { permutationByUser } from "#core/permutations";
 
 const AT = permutationByUser("at_blender")!;
+const SC = permutationByUser("sc_mongoose")!;
+
+function okResult(user: string) {
+  return {
+    user,
+    ok: true,
+    attempts: 1,
+    filesCopied: 3,
+    durationMs: 1,
+    itemsDone: 12001,
+    itemsTotal: 12070,
+  };
+}
 const dirs: string[] = [];
 
 function tmp(): string {
@@ -242,7 +255,6 @@ async function realish(p: string): Promise<string> {
 
 describe("publishRun", () => {
   const base = {
-    results: [],
     mafiaBuild: "r29183",
     concurrency: 3,
     startedAt: 0,
@@ -272,7 +284,7 @@ describe("publishRun", () => {
       staging: next,
       runId: "run-2",
       entries: freshEntries,
-      missing: [AT.files[0]],
+      results: [],
       ...base,
     });
 
@@ -298,7 +310,7 @@ describe("publishRun", () => {
       staging: next,
       runId: "run-2",
       entries: await indexFiles(next, "run-2"),
-      missing: [AT.files[0]],
+      results: [],
       ...base,
     });
 
@@ -316,7 +328,7 @@ describe("publishRun", () => {
       staging,
       runId: "run-1",
       entries: await indexFiles(staging, "run-1"),
-      missing: [],
+      results: [],
       ...base,
     });
 
@@ -327,6 +339,83 @@ describe("publishRun", () => {
     expect(published.totalBytes).toBe(3);
   });
 
+  it("keeps files no permutation in this run was even asked to produce", async () => {
+    // REGRESSION: `missing` used to be scoped to the SELECTED permutations, so a
+    // `--only sc_mongoose` run published its 3 files, pruned the previous run and
+    // destroyed the other 159. A published dataset is all-or-nothing: anything this
+    // run did not produce has to be carried, whether it failed or was never run.
+    const data = tmp();
+
+    const first = await createStaging(data, "run-1");
+    for (const name of [...AT.files, ...SC.files]) {
+      writeFileSync(join(first.dataDir, name), "from run 1");
+    }
+    await publishRun(data, {
+      staging: first,
+      runId: "run-1",
+      entries: await indexFiles(first, "run-1"),
+      results: [okResult(AT.user), okResult(SC.user)],
+      ...base,
+    });
+
+    // run-2 is `--only at_blender`: it produces AT's 3 files and never touches SC.
+    const second = await createStaging(data, "run-2");
+    for (const name of AT.files) {
+      writeFileSync(join(second.dataDir, name), "from run 2");
+    }
+    const { manifest: published } = await publishRun(data, {
+      staging: second,
+      runId: "run-2",
+      entries: await indexFiles(second, "run-2"),
+      results: [okResult(AT.user)],
+      ...base,
+    });
+
+    expect(published.entries.map((e) => e.name).sort()).toEqual(
+      [...AT.files, ...SC.files].sort(),
+    );
+    const byName = new Map(published.entries.map((e) => [e.name, e]));
+    expect(byName.get(AT.files[0])!.sourceRunId).toBe("run-2");
+    expect(byName.get(SC.files[0])!.sourceRunId).toBe("run-1");
+    expect(readFileSync(join(data, "current", "data", SC.files[0]), "utf8")).toBe(
+      "from run 1",
+    );
+  });
+
+  it("carries the results of the permutations it carried files for", async () => {
+    // resumableUsers joins entries against results, so carrying a permutation's
+    // files without its result would silently make it un-resumable and it would be
+    // re-derived from scratch on the next --resume.
+    const data = tmp();
+
+    const first = await createStaging(data, "run-1");
+    for (const name of [...AT.files, ...SC.files]) {
+      writeFileSync(join(first.dataDir, name), "x");
+    }
+    await publishRun(data, {
+      staging: first,
+      runId: "run-1",
+      entries: await indexFiles(first, "run-1"),
+      results: [okResult(AT.user), okResult(SC.user)],
+      ...base,
+    });
+
+    const second = await createStaging(data, "run-2");
+    for (const name of AT.files) writeFileSync(join(second.dataDir, name), "y");
+    const { manifest: published } = await publishRun(data, {
+      staging: second,
+      runId: "run-2",
+      entries: await indexFiles(second, "run-2"),
+      results: [okResult(AT.user)],
+      ...base,
+    });
+
+    expect(published.results.map((r) => r.user).sort()).toEqual(
+      [AT.user, SC.user].sort(),
+    );
+    expect(published.results.every((r) => r.ok)).toBe(true);
+  });
+
   it("prunes the previous run once the swap has happened", async () => {
     const data = tmp();
     const first = await createStaging(data, "run-1");
@@ -335,7 +424,7 @@ describe("publishRun", () => {
       staging: first,
       runId: "run-1",
       entries: await indexFiles(first, "run-1"),
-      missing: [],
+      results: [],
       ...base,
     });
 
@@ -345,7 +434,7 @@ describe("publishRun", () => {
       staging: second,
       runId: "run-2",
       entries: await indexFiles(second, "run-2"),
-      missing: [],
+      results: [],
       ...base,
     });
 

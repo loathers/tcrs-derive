@@ -109,7 +109,6 @@ export async function runCommand(flags: CliFlags): Promise<number> {
         staging: result.staging,
         runId: result.runId,
         entries: result.entries,
-        missing: result.missing,
         results: result.results,
         mafiaBuild: result.mafiaBuild,
         concurrency: cfg.concurrency,

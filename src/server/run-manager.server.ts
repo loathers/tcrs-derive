@@ -372,7 +372,6 @@ export class RunManager {
       staging: result.staging,
       runId: result.runId,
       entries: result.entries,
-      missing: result.missing,
       results: result.results,
       mafiaBuild: result.mafiaBuild,
       concurrency: this.#o.config.concurrency,
