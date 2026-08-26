@@ -22,9 +22,22 @@ function fakeRes() {
       chunks.push(s);
       return true;
     }),
-    on: vi.fn(),
+    ...emitter(),
     get body() {
       return chunks.join("");
+    },
+  };
+}
+
+/** A minimal EventEmitter stand-in: records handlers so a test can fire them. */
+function emitter() {
+  const handlers = new Map<string, (() => void)[]>();
+  return {
+    on: vi.fn((name: string, fn: () => void) => {
+      handlers.set(name, [...(handlers.get(name) ?? []), fn]);
+    }),
+    fire(name: string) {
+      for (const fn of handlers.get(name) ?? []) fn();
     },
   };
 }
@@ -97,6 +110,89 @@ describe("the SSE wire format", () => {
     for (const frame of frames) {
       const data = JSON.parse(frame.split("data: ")[1]!);
       expect(typeof data.type).toBe("string");
+    }
+  });
+});
+
+describe("a client that goes away", () => {
+  /**
+   * REGRESSION: the close handlers were registered AFTER `await manager.status()`,
+   * which does real fs I/O. A client dropping inside that window -- a navigation
+   * mid-load, or EventSource's own 3s reconnect churn -- had already fired `close`
+   * by the time they were attached, so the subscription and the 15s heartbeat that
+   * were created next were never cleaned up. Every dropped connection left one more
+   * permanent listener and timer.
+   */
+  it("unsubscribes and stops its heartbeat if it drops during the snapshot", async () => {
+    vi.useFakeTimers();
+    try {
+      const res = fakeRes();
+      const req = emitter();
+
+      let release!: () => void;
+      const inFlight = new Promise<void>((r) => {
+        release = r;
+      });
+
+      const listeners: ((e: ServerEvent) => void)[] = [];
+      const manager = {
+        status: async () => {
+          await inFlight;
+          return { now: "x", run: null };
+        },
+        activeState: null,
+        subscribe: (fn: (e: ServerEvent) => void) => {
+          listeners.push(fn);
+          return () => {
+            listeners.splice(listeners.indexOf(fn), 1);
+          };
+        },
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const handled = sseHandler(manager as any)(req as any, res as any);
+
+      // The client goes while status() is still reading the manifest.
+      req.fire("close");
+      res.writableEnded = true;
+      release();
+      await handled;
+
+      expect(listeners).toHaveLength(0);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("still cleans up when it drops after the stream is established", async () => {
+    vi.useFakeTimers();
+    try {
+      const res = fakeRes();
+      const req = emitter();
+      const listeners: ((e: ServerEvent) => void)[] = [];
+      const manager = {
+        status: async () => ({ now: "x", run: null }),
+        activeState: null,
+        subscribe: (fn: (e: ServerEvent) => void) => {
+          listeners.push(fn);
+          return () => {
+            listeners.splice(listeners.indexOf(fn), 1);
+          };
+        },
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await sseHandler(manager as any)(req as any, res as any);
+      expect(listeners).toHaveLength(1);
+      expect(vi.getTimerCount()).toBe(1);
+
+      req.fire("close");
+
+      expect(listeners).toHaveLength(0);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
     }
   });
 });

@@ -44,8 +44,34 @@ export function sseHandler(manager: RunManager) {
       res.write(`data: ${JSON.stringify(event)}\n\n`);
     };
 
+    let unsubscribe: (() => void) | null = null;
+    let heartbeat: NodeJS.Timeout | null = null;
+    let gone = false;
+
+    const cleanup = () => {
+      gone = true;
+      if (heartbeat) clearInterval(heartbeat);
+      if (unsubscribe) unsubscribe();
+      heartbeat = null;
+      unsubscribe = null;
+    };
+
+    // BEFORE the first await, and that is the whole point. manager.status() below
+    // does fs I/O, and a client dropping inside it -- a navigation mid-load, or
+    // EventSource's own 3s reconnect churn -- fires `close` before handlers
+    // registered afterwards exist. The subscription and heartbeat created further
+    // down would then never be cleaned up, one more of each per dropped connection,
+    // for the life of the process.
+    req.on("close", cleanup);
+    res.on("close", cleanup);
+    res.on("error", cleanup);
+
     // The full snapshot, first.
     const status = await manager.status();
+    // `close` may have fired during that await, in which case cleanup has already
+    // run and nothing is left to run it again. Subscribing now would leak.
+    if (gone) return;
+
     send({
       type: "snapshot",
       seq: 0,
@@ -53,18 +79,9 @@ export function sseHandler(manager: RunManager) {
       state: manager.activeState,
     });
 
-    const unsubscribe = manager.subscribe(send);
-
-    const heartbeat = setInterval(() => {
+    unsubscribe = manager.subscribe(send);
+    heartbeat = setInterval(() => {
       if (!res.writableEnded) res.write(": hb\n\n");
     }, HEARTBEAT_MS);
-
-    const cleanup = () => {
-      clearInterval(heartbeat);
-      unsubscribe();
-    };
-    req.on("close", cleanup);
-    res.on("close", cleanup);
-    res.on("error", cleanup);
   };
 }
