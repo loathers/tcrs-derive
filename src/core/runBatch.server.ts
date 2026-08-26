@@ -71,14 +71,6 @@ export interface BatchResult {
   cancelled: boolean;
   results: PermutationResult[];
   mafiaBuild: string | null;
-  /**
-   * Files THIS RUN'S SELECTION should have produced but did not, so it reports
-   * what the run failed at. Deliberately not what publishRun fills gaps from:
-   * that needs every file the dataset should contain, which for `--only` is a much
-   * larger set. Wiring the two together published a partial dataset and pruned the
-   * rest of it away, so publishRun computes its own.
-   */
-  missing: string[];
   /** What this run actually produced, hashed once. Handed to publishRun so the
    *  dataset is not read and hashed a second time. */
   entries: ManifestEntry[];
@@ -343,17 +335,11 @@ async function execute(
   // hashing every collected file only to delete it is pure waste, and it races
   // the staging directory being torn down, which surfaced as a spurious ENOENT
   // on SHA256SUMS.txt.tmp.
-  let missing: string[] = [];
-  let entries: ManifestEntry[] = [];
-  if (!signal.aborted) {
-    entries = await indexFiles(staging, runId);
-    const produced = new Set(entries.map((e) => e.name));
-    missing = expectedFiles(selected).filter((n) => !produced.has(n));
-    // Checksums are written by publishRun instead, once carry-forward has run, so
-    // they cover the files it filled the gaps with.
-  } else {
-    missing = expectedFiles(selected);
-  }
+  // Checksums are written by publishRun instead, once carry-forward has run, so
+  // they cover the files it filled the gaps with.
+  const entries: ManifestEntry[] = signal.aborted
+    ? []
+    : await indexFiles(staging, runId);
 
   const ok = [...results.values()].filter((r) => r.ok).length;
   const failed = [...results.values()].filter((r) => !r.ok).length;
@@ -379,14 +365,8 @@ async function execute(
     cancelled: signal.aborted,
     results: [...results.values()],
     mafiaBuild,
-    missing,
     entries,
   };
-}
-
-/** Every file the selection should produce. */
-export function expectedFiles(selected: readonly Permutation[]): string[] {
-  return selected.flatMap((p) => [...p.files]);
 }
 
 /**

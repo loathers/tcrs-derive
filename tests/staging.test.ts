@@ -15,6 +15,7 @@ import {
   runIdFor,
   writeManifest,
   writeSums,
+  type PermutationResult,
   type RunManifest,
 } from "#core/staging.server";
 import { permutationByUser } from "#core/permutations";
@@ -22,7 +23,7 @@ import { permutationByUser } from "#core/permutations";
 const AT = permutationByUser("at_blender")!;
 const SC = permutationByUser("sc_mongoose")!;
 
-function okResult(user: string) {
+function okResult(user: string): PermutationResult {
   return {
     user,
     ok: true,
@@ -339,13 +340,12 @@ describe("publishRun", () => {
     expect(published.totalBytes).toBe(3);
   });
 
-  it("keeps files no permutation in this run was even asked to produce", async () => {
-    // REGRESSION: `missing` used to be scoped to the SELECTED permutations, so a
-    // `--only sc_mongoose` run published its 3 files, pruned the previous run and
-    // destroyed the other 159. A published dataset is all-or-nothing: anything this
-    // run did not produce has to be carried, whether it failed or was never run.
-    const data = tmp();
-
+  /*
+   * run-1 derives both permutations. run-2 is `--only at_blender`: it re-derives
+   * AT and never touches SC. Both tests below assert on what run-2 published, so
+   * they share the setup and differ only in what they look at.
+   */
+  async function partialRerun(data: string): Promise<RunManifest> {
     const first = await createStaging(data, "run-1");
     for (const name of [...AT.files, ...SC.files]) {
       writeFileSync(join(first.dataDir, name), "from run 1");
@@ -358,18 +358,27 @@ describe("publishRun", () => {
       ...base,
     });
 
-    // run-2 is `--only at_blender`: it produces AT's 3 files and never touches SC.
     const second = await createStaging(data, "run-2");
     for (const name of AT.files) {
       writeFileSync(join(second.dataDir, name), "from run 2");
     }
-    const { manifest: published } = await publishRun(data, {
+    const { manifest } = await publishRun(data, {
       staging: second,
       runId: "run-2",
       entries: await indexFiles(second, "run-2"),
       results: [okResult(AT.user)],
       ...base,
     });
+    return manifest;
+  }
+
+  it("keeps files no permutation in this run was even asked to produce", async () => {
+    // REGRESSION: the gap list used to be scoped to the SELECTED permutations, so a
+    // `--only sc_mongoose` run published its 3 files, pruned the previous run and
+    // destroyed the other 159. A published dataset is all-or-nothing: anything this
+    // run did not produce has to be carried, whether it failed or was never run.
+    const data = tmp();
+    const published = await partialRerun(data);
 
     expect(published.entries.map((e) => e.name).sort()).toEqual(
       [...AT.files, ...SC.files].sort(),
@@ -386,29 +395,7 @@ describe("publishRun", () => {
     // resumableUsers joins entries against results, so carrying a permutation's
     // files without its result would silently make it un-resumable and it would be
     // re-derived from scratch on the next --resume.
-    const data = tmp();
-
-    const first = await createStaging(data, "run-1");
-    for (const name of [...AT.files, ...SC.files]) {
-      writeFileSync(join(first.dataDir, name), "x");
-    }
-    await publishRun(data, {
-      staging: first,
-      runId: "run-1",
-      entries: await indexFiles(first, "run-1"),
-      results: [okResult(AT.user), okResult(SC.user)],
-      ...base,
-    });
-
-    const second = await createStaging(data, "run-2");
-    for (const name of AT.files) writeFileSync(join(second.dataDir, name), "y");
-    const { manifest: published } = await publishRun(data, {
-      staging: second,
-      runId: "run-2",
-      entries: await indexFiles(second, "run-2"),
-      results: [okResult(AT.user)],
-      ...base,
-    });
+    const published = await partialRerun(tmp());
 
     expect(published.results.map((r) => r.user).sort()).toEqual(
       [AT.user, SC.user].sort(),

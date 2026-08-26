@@ -128,9 +128,6 @@ describe("a full batch", () => {
     expect(result.entries.map((e) => e.name).sort()).toEqual(
       only.flatMap((u) => [...permutationByUser(u)!.files]).sort(),
     );
-
-    // Nothing missing for the selection we actually ran.
-    expect(result.missing).toEqual([]);
   }, 60_000);
 
   it("keeps the live state in sync with the event stream", async () => {
@@ -183,8 +180,8 @@ describe("a full batch", () => {
     expect(result.ok).toBe(0);
     expect(result.failed).toBe(2);
     expect(result.results.every((r) => r.reason === "incomplete")).toBe(true);
-    // Partial output was discarded, so every expected file is missing.
-    expect(result.missing).toHaveLength(6);
+    // Partial output was discarded, so nothing was indexed to publish.
+    expect(result.entries).toEqual([]);
   }, 60_000);
 
   it("respects the concurrency limit across the whole batch", async () => {

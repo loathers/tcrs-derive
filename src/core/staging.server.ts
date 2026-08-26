@@ -84,6 +84,11 @@ export interface RunManifest {
   durationMs: number | null;
   concurrency: number;
   mafiaBuild: string | null;
+  /**
+   * Describes the PUBLISHED DATASET, not just this run: a permutation whose files
+   * were carried forward keeps the result of the run that derived them. Same mix
+   * of runs that ManifestEntry.sourceRunId records per file.
+   */
   results: PermutationResult[];
   entries: ManifestEntry[];
   zip: { name: string; bytes: number; sha256: string } | null;
@@ -399,14 +404,12 @@ export async function publishRun(
   // Results follow their files. resumableUsers joins entries against results, so a
   // permutation whose files were carried but whose result was dropped would look
   // un-derived and be run again from scratch on the next --resume.
-  const attempted = new Set(input.results.map((r) => r.user));
   const carriedUsers = new Set(carried.map((e) => e.user));
-  const results = [
-    ...input.results,
-    ...(previousManifest?.results ?? []).filter(
-      (r) => !attempted.has(r.user) && carriedUsers.has(r.user),
-    ),
-  ];
+  const byUser = new Map(input.results.map((r) => [r.user, r]));
+  for (const r of previousManifest?.results ?? []) {
+    if (!byUser.has(r.user) && carriedUsers.has(r.user)) byUser.set(r.user, r);
+  }
+  const results = [...byUser.values()];
 
   // After the merge, so the checksums cover carried files too.
   await writeSums(input.staging, entries);
