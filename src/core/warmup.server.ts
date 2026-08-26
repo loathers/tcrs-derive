@@ -26,8 +26,17 @@ export interface WarmUpOptions {
  * templateDir = null and each permutation downloads its own data.
  */
 export async function warmUp(o: WarmUpOptions): Promise<boolean> {
+  // Nothing below is worth doing for a run that has already been told to stop, and
+  // the rm would destroy a usable template on the way out for nothing.
+  if (o.signal?.aborted) return false;
+
   await rm(o.templateDir, { recursive: true, force: true });
   await mkdir(o.templateDir, { recursive: true });
+
+  // Wiping and rebuilding the template tree is slow enough for a cancel to land
+  // inside it. Checking here rather than relying on the listener below is what
+  // stops the spawn: addEventListener on an already-aborted signal never fires.
+  if (o.signal?.aborted) return false;
 
   const child = spawn(
     o.javaBin,
@@ -86,6 +95,9 @@ export async function warmUp(o: WarmUpOptions): Promise<boolean> {
     if (pgid !== null) signalGroup(pgid, "SIGKILL");
   };
   signals.addEventListener("abort", onAbort, { once: true });
+  // AbortSignal.any over an already-aborted input is itself already aborted, and
+  // fires nothing. Replay by hand to cover the window spanning the spawn.
+  if (signals.aborted) onAbort();
 
   try {
     const code = await new Promise<number | null>((resolve) => {
