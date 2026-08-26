@@ -363,6 +363,38 @@ describe("cancellation", () => {
   }, 30_000);
 });
 
+describe("failure classification", () => {
+  /**
+   * REGRESSION: `reason` was declared outside the retry loop and the final
+   * classifier was guarded by `reason === undefined`, so whatever attempt 1
+   * decided stuck. An attempt that discarded partial output set "incomplete", and
+   * a second attempt that then failed at login was still reported as "incomplete"
+   * with copied: 0 -- in the chart, the plain reporter and the manifest alike.
+   */
+  it("classifies the last attempt, not the first", async () => {
+    const runLog = join(tmp(), "runs");
+    const h = harness(
+      [
+        `--fake-run-log=${runLog}`,
+        "--fake-fixture=partial-bail,warmup",
+        "--fake-files=3,0",
+      ],
+      { maxAttempts: 2 },
+    );
+
+    const r = await runOne(h.opts);
+
+    // Attempt 1 wrote partial output and had it discarded; attempt 2 replayed
+    // `username: Invalid login.` and never started deriving.
+    expect(h.find("perm:attempt")).toHaveLength(2);
+    expect(h.find("perm:discarded")).toHaveLength(1);
+    expect(r.ok).toBe(false);
+    expect(r.copied).toBe(0);
+    expect(r.reason).toBe("login");
+    expect(h.find("perm:failed")[0]!.reason).toBe("login");
+  }, 30_000);
+});
+
 describe("work dir seeding", () => {
   it("deletes a template's data/ so mafia cannot skip deriving", async () => {
     // LOAD-BEARING: a leaked TCRS file makes mafia find existing data and skip

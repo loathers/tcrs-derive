@@ -14,8 +14,11 @@
  * allow-listed environment.
  *
  * Flags:
- *   --fake-fixture=NAME     replay tests/fixtures/logs/NAME.log (default: happy)
- *   --fake-files=N          write N of the 3 TCRS files into ./data (default: 3)
+ *   --fake-fixture=NAME     replay tests/fixtures/logs/NAME.log (default: happy).
+ *                           Comma-separated with --fake-run-log to vary by attempt.
+ *   --fake-run-log=PATH     count invocations here, so --fake-fixture can be a list
+ *   --fake-files=N          write N of the 3 TCRS files into ./data (default: 3).
+ *                           Also comma-separated per attempt.
  *   --fake-perm=USER        which permutation's filenames to write (default derived
  *                           from the fixture's own "Wrote file" lines)
  *   --fake-exit=N           exit code (default 0)
@@ -31,7 +34,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
@@ -44,8 +47,35 @@ function flag(name, fallback = undefined) {
   return process.argv.includes(`--fake-${name}`) ? true : fallback;
 }
 
-const fixture = flag("fixture", "happy");
-const fileCount = Number(flag("files", "3"));
+/**
+ * --fake-fixture and --fake-files take a COMMA-SEPARATED LIST, and with
+ * --fake-run-log the Nth invocation uses the Nth entry (the last one repeating).
+ * That is the only way to make a retry sequence behave differently on its second
+ * attempt: every other flag is fixed for the life of the run, and seedWorkdir wipes
+ * the work dir between attempts, so the counter has to live outside it.
+ *
+ * The counter is per-PROCESS-START, so a run with the warm-up enabled spends the
+ * first entry on the warm-up. Tests using this either skip the warm-up or account
+ * for it.
+ */
+const runLog = flag("run-log");
+let invocation = 0;
+if (runLog) {
+  try {
+    invocation = readFileSync(runLog, "utf8").length;
+  } catch {
+    invocation = 0; // first time through
+  }
+  appendFileSync(runLog, "x");
+}
+/** The entry for this invocation, the last one repeating once the list runs out. */
+function nth(raw) {
+  const parts = String(raw).split(",");
+  return parts[Math.min(invocation, parts.length - 1)];
+}
+
+const fixture = nth(flag("fixture", "happy"));
+const fileCount = Number(nth(flag("files", "3")));
 const exitCode = Number(flag("exit", "0"));
 const delayMs = Number(flag("delay", "0"));
 const truncateAt = flag("truncate-at") ? Number(flag("truncate-at")) : null;

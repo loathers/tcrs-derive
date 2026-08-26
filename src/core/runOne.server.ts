@@ -111,6 +111,11 @@ export async function runOne(o: RunOneOptions): Promise<RunOneResult> {
       return result(false, "cancelled");
     }
     attempt++;
+    // Each attempt classifies itself. `reason` outlives the loop so the value the
+    // LAST attempt reached is what gets reported, but carrying one forward means
+    // the classifier below (guarded on `reason === undefined`) is skipped and this
+    // attempt's failure is labelled with the previous one's cause.
+    reason = undefined;
     emit({ type: "perm:attempt", user: p.user, attempt, maxAttempts });
 
     try {
