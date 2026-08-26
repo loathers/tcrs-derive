@@ -40,6 +40,10 @@ RUN yarn react-router build
 # threads are still mutating it, throwing ConcurrentModificationException. Observed
 # effect was every one of the 54 permutations failing after 900-9200 items on all
 # three attempts. Fixed by r29183.
+#
+# The resolved tag is written to a .tag sidecar next to the jar. updateJar() reads
+# it to tell "already current" from "never checked", so a fresh container does not
+# re-download the very release it shipped with.
 FROM debian:bookworm-slim AS jar
 ARG MAFIA_TAG=
 RUN apt-get update \
@@ -51,12 +55,16 @@ RUN set -eux; \
     else \
       api="https://api.github.com/repos/kolmafia/kolmafia/releases/latest"; \
     fi; \
-    url="$(curl -fsSL "$api" \
+    release="$(curl -fsSL "$api")"; \
+    url="$(echo "$release" \
       | jq -r '.assets[] | select(.name | endswith(".jar")) | .browser_download_url' | head -n1)"; \
+    tag="$(echo "$release" | jq -r '.tag_name')"; \
     test -n "$url"; \
-    echo "Fetching $url"; \
+    test -n "$tag"; \
+    echo "Fetching $url ($tag)"; \
     curl -fsSL "$url" -o /tmp/KoLmafia.jar; \
-    test -s /tmp/KoLmafia.jar
+    test -s /tmp/KoLmafia.jar; \
+    printf '%s' "$tag" > /tmp/KoLmafia.jar.tag
 
 # --- runtime -----------------------------------------------------------------
 FROM node:24-bookworm-slim AS runtime
@@ -78,7 +86,8 @@ COPY --from=build /app/src          ./src
 COPY --from=build /app/app          ./app
 COPY --from=build /app/server.ts    ./server.ts
 COPY --from=build /app/package.json ./package.json
-COPY --from=jar   /tmp/KoLmafia.jar ./KoLmafia.jar
+COPY --from=jar   /tmp/KoLmafia.jar     ./KoLmafia.jar
+COPY --from=jar   /tmp/KoLmafia.jar.tag ./KoLmafia.jar.tag
 
 ENV NODE_ENV=production \
     PORT=3000 \

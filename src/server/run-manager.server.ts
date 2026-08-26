@@ -9,7 +9,7 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { SecretStore } from "#core/env.server";
 import type { RunEvent } from "#core/events";
-import { ensureJar, JarUnavailableError } from "#core/jar.server";
+import { ensureJar, JarUnavailableError, updateJar } from "#core/jar.server";
 import { acquireLock, type Lock } from "#core/lock.server";
 import { ALL_PERMUTATIONS } from "#core/permutations";
 import {
@@ -115,6 +115,23 @@ export class RunManager {
 			// Feed the resolved path back into the config every run will use.
 			this.#o.config.jarPath = resolved;
 			process.stdout.write(`KoLmafia jar: ${resolved}\n`);
+
+			// Re-checked at the start of each run, so picking up a new KoLmafia does not
+			// need a redeploy. Fetched jars live under the data dir because that is the
+			// volume that survives one, and the boot resolve above will find them again.
+			this.#o.config.refreshJar = async () => {
+				const update = await updateJar({
+					current: this.#o.config.jarPath,
+					dir: join(this.#o.config.dataDir, "mafia"),
+					pinnedTag: process.env.MAFIA_TAG,
+					onProgress: (m) => process.stdout.write(`${m}\n`),
+				});
+				if (update === null) return null;
+				// Later runs start from the new jar rather than re-deciding each time.
+				this.#o.config.jarPath = update.path;
+				process.stdout.write(`KoLmafia jar: ${update.path} (${update.tag})\n`);
+				return update.path;
+			};
 		} catch (e) {
 			const detail = e instanceof JarUnavailableError ? e.detail : String(e);
 			this.#configError = this.#configError

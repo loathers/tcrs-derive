@@ -33,6 +33,13 @@ import { warmUp } from "./warmup.server.ts";
 
 export interface BatchConfig {
 	jarPath: string;
+	/**
+	 * Optional per-run check for a newer KoLmafia, awaited before the warm-up.
+	 * Returns the jar to use, or null to keep the current one.
+	 *
+	 * May throw. A failed check warns and the run carries on with the jar it has.
+	 */
+	refreshJar?: (() => Promise<string | null>) | undefined;
 	javaBin: string;
 	javaOpts?: readonly string[];
 	concurrency: number;
@@ -213,13 +220,33 @@ async function execute(
 	}
 	for (const p of todo) emit({ type: "perm:queued", user: p.user });
 
+	// --- Jar refresh -------------------------------------------------------
+	// A run is the moment to pick up a new KoLmafia: releases only land between runs,
+	// and one HTTP request is nothing against an 8-minute batch. Best-effort by
+	// design, since GitHub being unreachable is not a reason to skip a derive.
+	let jarPath = cfg.jarPath;
+	if (cfg.refreshJar !== undefined && todo.length > 0 && !signal.aborted) {
+		try {
+			const fresh = await cfg.refreshJar();
+			if (fresh !== null) jarPath = fresh;
+		} catch (e) {
+			emit({
+				type: "warn",
+				user: null,
+				message: `could not check for a newer KoLmafia: ${
+					e instanceof Error ? e.message : String(e)
+				}`,
+			});
+		}
+	}
+
 	// --- Warm-up -----------------------------------------------------------
 	let templateDir: string | null = null;
 	if (!cfg.skipWarmup && todo.length > 0 && !signal.aborted) {
 		emit({ type: "batch:warmup", status: "start" });
 		const candidate = join(cfg.dataDir, "work", ".template");
 		const ok = await warmUp({
-			jarPath: cfg.jarPath,
+			jarPath,
 			javaBin: cfg.javaBin,
 			...(cfg.javaOpts ? { javaOpts: cfg.javaOpts } : {}),
 			templateDir: candidate,
@@ -247,7 +274,7 @@ async function execute(
 			one = await runOne({
 				permutation: p,
 				password: secrets.passwordFor(p),
-				jarPath: cfg.jarPath,
+				jarPath,
 				javaBin: cfg.javaBin,
 				...(cfg.javaOpts ? { javaOpts: cfg.javaOpts } : {}),
 				workDir: join(cfg.dataDir, "work", p.user),

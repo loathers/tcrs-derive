@@ -78,9 +78,15 @@ cooldown history. Give the container at least 4 GB, a 60 second stop grace perio
 Deploy stop-then-start rather than rolling, because two containers cannot share
 `/data`.
 
-The KoLmafia jar is baked into the image at build time. Pin one with
-`--build-arg MAFIA_TAG=r29183` if you need to, but not at or below `r29131`, which
-has a race in `TCRSDatabase.save` that fails every permutation.
+The KoLmafia jar is baked into the image at build time, and every run checks
+GitHub for a newer release and fetches it if there is one, so a new mafia does not
+need a redeploy. Fetched jars live under `/data`. Which build a run actually used is
+recorded in its manifest and shown on the site.
+
+`MAFIA_TAG` pins the version. At build time, `--build-arg MAFIA_TAG=r29183` chooses
+which release is baked in. As a runtime environment variable it stops the per-run
+upgrade, freezing the container on the jar it already has. Do not pin at or below
+`r29131`, which has a race in `TCRSDatabase.save` that fails every permutation.
 
 ## Tests
 

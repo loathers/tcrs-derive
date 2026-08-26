@@ -3,13 +3,24 @@
  *
  * Two things worth knowing:
  *  - No `curl` or `jq` required: global fetch parses the GitHub release JSON.
- *  - A release can be PINNED. Always taking the latest, with no checksum,
- *    so it could silently pick up a mafia release whose output strings changed,
- *    breaking the parser mid-batch with no diagnosis. In production the jar is
- *    baked into the image at a pinned MAFIA_TAG and this path is never taken.
+ *  - A release can be PINNED. Always taking the latest, with no checksum, could
+ *    silently pick up a mafia release whose output strings changed, breaking the
+ *    parser mid-batch with no diagnosis. MAFIA_TAG is how you stop that, and
+ *    updateJar() honours it by refusing to upgrade past it.
+ *
+ * The tag a jar came from is recorded in a `<jar>.tag` sidecar, which is what lets
+ * updateJar() tell "already current" from "never checked". The image writes one for
+ * the jar it bakes in, so a fresh container does not re-download what it shipped.
  */
 
-import { readdir, rename, stat, writeFile } from "node:fs/promises";
+import {
+	mkdir,
+	readdir,
+	readFile,
+	rename,
+	stat,
+	writeFile,
+} from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 
 const RELEASES = "https://api.github.com/repos/kolmafia/kolmafia/releases";
@@ -140,10 +151,9 @@ export async function downloadJar(url: string, dest: string): Promise<void> {
 	const res = await fetch(url, { redirect: "follow" });
 	if (!res.ok) throw new Error(`Download failed: ${res.status} ${url}`);
 
-	// Buffered rather than streamed: the jar is ~34MB, this runs at most once, and
-	// in production the jar is baked into the image at a pinned MAFIA_TAG so this
-	// path is never taken at all. Streaming would need a Node/DOM ReadableStream
-	// cast for no real benefit.
+	// Buffered rather than streamed: the jar is ~34MB and this runs at most once per
+	// mafia release. Streaming would need a Node/DOM ReadableStream cast for no real
+	// benefit at that size.
 	const bytes = Buffer.from(await res.arrayBuffer());
 	if (bytes.byteLength === 0) throw new Error(`Empty download from ${url}`);
 
@@ -161,4 +171,64 @@ async function isFile(path: string): Promise<boolean> {
 	} catch {
 		return false;
 	}
+}
+
+/** The release tag a jar came from, from its sidecar. Null when unrecorded. */
+export async function readJarTag(jarPath: string): Promise<string | null> {
+	try {
+		const tag = (await readFile(`${jarPath}.tag`, "utf8")).trim();
+		return tag === "" ? null : tag;
+	} catch {
+		// No sidecar means an unknown provenance, which updateJar treats as "stale".
+		return null;
+	}
+}
+
+export interface JarUpdate {
+	path: string;
+	tag: string;
+	/** False when that release was already on disk and only the path changed. */
+	downloaded: boolean;
+}
+
+/**
+ * Check for a newer KoLmafia release, fetching it if there is one.
+ *
+ * Returns null when nothing should change, which is the common case: a pinned tag,
+ * or the latest release is already the one in use.
+ *
+ * THROWS on a failed check, and the caller is expected to carry on with the jar it
+ * already has. GitHub being unreachable is not a reason to abandon a derive.
+ */
+export async function updateJar(o: {
+	/** Path to the jar in use. Its sidecar says which release it came from. */
+	current: string;
+	/** Where fetched jars live. Wants to be on persistent storage. */
+	dir: string;
+	/** MAFIA_TAG. Set means the operator chose a build, so do not move off it. */
+	pinnedTag?: string | undefined;
+	onProgress?: ((message: string) => void) | undefined;
+}): Promise<JarUpdate | null> {
+	// A pin is a deliberate choice about which build derives the dataset. Upgrading
+	// past it would make MAFIA_TAG mean nothing.
+	if (o.pinnedTag !== undefined && o.pinnedTag !== "") return null;
+
+	const currentTag = await readJarTag(o.current);
+	const asset = await findReleaseJar();
+	if (asset.tag === currentTag) return null;
+
+	const dest = join(o.dir, asset.name);
+	if (await isFile(dest)) {
+		// Already fetched by an earlier run, so only the sidecar needs catching up.
+		await writeFile(`${dest}.tag`, asset.tag);
+		return { path: absolute(dest), tag: asset.tag, downloaded: false };
+	}
+
+	o.onProgress?.(
+		`KoLmafia ${asset.tag} supersedes ${currentTag ?? "the bundled jar"}, fetching it`,
+	);
+	await mkdir(o.dir, { recursive: true });
+	await downloadJar(asset.url, dest);
+	await writeFile(`${dest}.tag`, asset.tag);
+	return { path: absolute(dest), tag: asset.tag, downloaded: true };
 }

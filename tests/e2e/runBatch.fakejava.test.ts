@@ -66,6 +66,70 @@ function config(dataDir: string, over: Partial<BatchConfig> = {}): BatchConfig {
 	};
 }
 
+describe("the per-run KoLmafia check", () => {
+	it("runs before any JVM is spawned, and swaps the jar it hands them", async () => {
+		const order: string[] = [];
+		const handle = startBatch(
+			config(tmp(), {
+				only: ["at_blender"],
+				refreshJar: async () => {
+					order.push("refresh");
+					return "/somewhere/KoLmafia-29183.jar";
+				},
+			}),
+			allSecrets,
+		);
+		handle.onEvent((e) => {
+			if (e.type === "perm:attempt") order.push("attempt");
+		});
+		await handle.result;
+
+		// The check has to land before the first spawn, or the run it is meant to
+		// affect has already started on the old jar.
+		expect(order[0]).toBe("refresh");
+		expect(order).toContain("attempt");
+	}, 60_000);
+
+	it("warns and carries on when the check fails", async () => {
+		// GitHub being unreachable must not cost a derive.
+		const warnings: string[] = [];
+		const handle = startBatch(
+			config(tmp(), {
+				only: ["at_blender"],
+				refreshJar: async () => {
+					throw new Error("github is down");
+				},
+			}),
+			allSecrets,
+		);
+		handle.onEvent((e) => {
+			if (e.type === "warn") warnings.push(e.message);
+		});
+		const result = await handle.result;
+
+		expect(warnings.some((w) => w.includes("github is down"))).toBe(true);
+		expect(result.ok).toBe(1);
+	}, 60_000);
+
+	it("is skipped entirely when there is nothing to derive", async () => {
+		// Nothing to run means nothing to upgrade for, so do not spend the request.
+		let called = 0;
+		const handle = startBatch(
+			config(tmp(), {
+				only: ["at_blender"],
+				exclude: ["at_blender"],
+				refreshJar: async () => {
+					called++;
+					return null;
+				},
+			}),
+			allSecrets,
+		);
+		await handle.result;
+		expect(called).toBe(0);
+	}, 60_000);
+});
+
 describe("startBatch preflight", () => {
 	it("throws synchronously on an unknown ONLY name", () => {
 		// Silently running zero permutations is the failure mode being prevented.
