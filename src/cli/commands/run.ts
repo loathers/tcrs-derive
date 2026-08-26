@@ -23,8 +23,36 @@ import { clearWork, paths, publishRun } from "#core/staging.server";
 import { createPlainReporter, formatSummaryTable } from "../plain.ts";
 import { renderChart } from "../render.tsx";
 
+/** A flag whose value could not be used. Reported as a usage error, exit code 2. */
+export class InvalidFlagError extends Error {}
+
+/**
+ * Parse a numeric flag, rejecting anything setTimeout or the pool would silently
+ * misread. `Number("abc")` is NaN, and NaN is not inert downstream: setTimeout
+ * coerces it to 1ms (so every permutation times out at once) and the pool builds
+ * zero workers (so the batch does nothing and exits 0).
+ */
+function flagNum(flag: string, raw: string): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new InvalidFlagError(
+      `--${flag} expects a positive number, got "${raw}"`,
+    );
+  }
+  return n;
+}
+
 export async function runCommand(flags: CliFlags): Promise<number> {
-  const cfg = buildConfig(flags);
+  let cfg: BatchConfig;
+  try {
+    cfg = buildConfig(flags);
+  } catch (e) {
+    if (e instanceof InvalidFlagError) {
+      process.stderr.write(`${e.message}\n`);
+      return 2;
+    }
+    throw e;
+  }
   await mkdir(cfg.dataDir, { recursive: true });
   await mkdir(paths(cfg.dataDir).work, { recursive: true });
 
@@ -138,24 +166,31 @@ export async function runCommand(flags: CliFlags): Promise<number> {
 }
 
 
-function buildConfig(flags: CliFlags): BatchConfig {
+export function buildConfig(flags: CliFlags): BatchConfig {
   const overrides: Partial<BatchConfig> = {};
   if (flags.only !== undefined) overrides.only = list(flags.only);
   if (flags.exclude !== undefined) overrides.exclude = list(flags.exclude);
   if (flags.resume) overrides.resume = true;
-  if (flags.concurrency) overrides.concurrency = Number(flags.concurrency);
+  if (flags.concurrency) {
+    overrides.concurrency = flagNum("concurrency", flags.concurrency);
+  }
   if (flags.jar) overrides.jarPath = resolve(flags.jar);
   if (flags["data-dir"]) overrides.dataDir = resolve(flags["data-dir"]);
-  if (flags.timeout) overrides.timeoutMs = Number(flags.timeout) * 1000;
+  if (flags.timeout) overrides.timeoutMs = flagNum("timeout", flags.timeout) * 1000;
   if (flags["login-timeout"]) {
-    overrides.loginTimeoutMs = Number(flags["login-timeout"]) * 1000;
+    overrides.loginTimeoutMs =
+      flagNum("login-timeout", flags["login-timeout"]) * 1000;
   }
-  if (flags["max-attempts"]) overrides.maxAttempts = Number(flags["max-attempts"]);
+  if (flags["max-attempts"]) {
+    overrides.maxAttempts = flagNum("max-attempts", flags["max-attempts"]);
+  }
   if (flags["retry-backoff"]) {
-    overrides.retryBackoffMs = Number(flags["retry-backoff"]) * 1000;
+    overrides.retryBackoffMs =
+      flagNum("retry-backoff", flags["retry-backoff"]) * 1000;
   }
   if (flags["stall-timeout"]) {
-    overrides.stallTimeoutMs = Number(flags["stall-timeout"]) * 1000;
+    overrides.stallTimeoutMs =
+      flagNum("stall-timeout", flags["stall-timeout"]) * 1000;
   }
   if (flags["skip-warmup"]) overrides.skipWarmup = true;
   if (flags["keep-workdirs"]) overrides.keepWorkdirs = true;
