@@ -6,8 +6,9 @@
  * to every connected browser).
  *
  * Logs live inside the run's own staging dir, so nothing is ever destructively
- * overwritten. run-all.sh:54 did `rm -f "$LOG_DIR"/*.log` at the START of a run, * wiping the previous run's logs precisely when you are re-running because
- * something failed and you want them.
+ * overwritten. Clearing a shared log directory at the start of a run wipes the
+ * previous run's logs precisely when you are re-running because something failed
+ * and you want them.
  */
 
 import { createWriteStream, type WriteStream } from "node:fs";

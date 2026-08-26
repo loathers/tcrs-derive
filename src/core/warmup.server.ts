@@ -1,5 +1,5 @@
 /**
- * The shared data-file warm-up. NODE-ONLY. Port of run-all.sh:67-84.
+ * The shared data-file warm-up. NODE-ONLY.
  *
  * One mafia run populates a template directory of common data files, which every
  * permutation then seeds its private work dir from, so the startup downloads
@@ -22,8 +22,8 @@ export interface WarmUpOptions {
 }
 
 /**
- * Best-effort, exactly as the bash: on any failure the caller continues with
- * templateDir = null and each permutation downloads its own data.
+ * Best-effort: on any failure the caller continues with templateDir = null and
+ * each permutation downloads its own data.
  */
 export async function warmUp(o: WarmUpOptions): Promise<boolean> {
 	// Nothing below is worth doing for a run that has already been told to stop, and
@@ -83,9 +83,8 @@ export async function warmUp(o: WarmUpOptions): Promise<boolean> {
 		stream.on("data", (c: string) => o.onLog?.(c));
 	}
 
-	// AbortSignal.timeout rather than the bash's `( sleep 300. Kill_tree ... ) &`,
-	// which was itself a leaked background job whose sleep could outlive the
-	// subshell kill.
+	// AbortSignal.timeout rather than a detached timer: it is cancelled by the same
+	// signal plumbing as everything else, so nothing outlives the kill.
 	const timeout = AbortSignal.timeout(o.timeoutMs);
 	const signals = o.signal ? AbortSignal.any([timeout, o.signal]) : timeout;
 

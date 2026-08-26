@@ -1,12 +1,9 @@
 /**
- * Batch orchestration. NODE-ONLY. Port of run-all.sh.
+ * Batch orchestration. NODE-ONLY.
  *
- * Replaces `xargs -P "$CONCURRENCY" -L1 run-one.sh` (run-all.sh:259) and, much
- * more importantly, the 1.5s progress-polling loop that re-derived all state by
- * `tr | awk | grep`-ing 54 growing log files. Over a 7.5 minute batch that was
- * ~300 frames x 54 files x ~4 forks: roughly 65,000 processes and ~80MB of
- * re-reading, purely to draw bars. Consuming each child's stdout directly deletes
- * all of it.
+ * Fans the permutations out CONCURRENCY at a time and folds every child's stdout
+ * into one event stream as it arrives, so drawing the chart costs nothing beyond
+ * parsing lines that were being read anyway.
  */
 
 import { join } from "node:path";
@@ -112,8 +109,8 @@ export class MissingPasswordsError extends Error {
  * covers late subscribers, but returning synchronously is the cheap fix.)
  *
  * Throws synchronously on a preflight failure, unknown ONLY names, or missing
- * passwords. The bash discovered a missing password inside the worker
- * (run-one.sh:20), so one .env typo failed one permutation 40 minutes into a batch.
+ * passwords. Discovering a missing password inside the worker instead would mean
+ * one .env typo failing one permutation 40 minutes into a batch.
  */
 export function startBatch(cfg: BatchConfig, secrets: SecretStore): RunHandle {
 	const now = cfg.now ?? (() => new Date());
@@ -200,9 +197,9 @@ async function execute(
 	});
 
 	// --- RESUME ------------------------------------------------------------
-	// Consults the published manifest, NOT the filesystem. The bash's already_done()
-	// accepted any nonzero-size file, so it happily re-adopted exactly the truncated
-	// 4001/12070 output that the completeness guard exists to reject.
+	// Consults the published manifest, NOT the filesystem. Accepting any nonzero-size
+	// file on disk would re-adopt exactly the truncated 4001/12070 output that the
+	// completeness guard exists to reject.
 	let todo = [...selected];
 	const skippedUsers = new Set<string>();
 	if (cfg.resume) {

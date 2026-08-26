@@ -1,10 +1,9 @@
 /**
- * KoLmafia jar resolution. NODE-ONLY. Port of common.sh:59-66 and run-all.sh:21-34.
+ * KoLmafia jar resolution. NODE-ONLY.
  *
- * Two improvements over the bash:
- *  - No `curl` or `jq` required: global fetch parses the GitHub release JSON. That
- *    is a genuine reduction in external dependencies.
- *  - A release can be PINNED. download_latest_jar had no pinning and no checksum,
+ * Two things worth knowing:
+ *  - No `curl` or `jq` required: global fetch parses the GitHub release JSON.
+ *  - A release can be PINNED. Always taking the latest, with no checksum,
  *    so it could silently pick up a mafia release whose output strings changed,
  *    breaking the parser mid-batch with no diagnosis. In production the jar is
  *    baked into the image at a pinned MAFIA_TAG and this path is never taken.

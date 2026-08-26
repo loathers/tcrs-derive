@@ -1,8 +1,7 @@
 /**
  * `tcrs run`, derive locally.
  *
- * Chooses between the ink chart and plain line output the same way the bash did
- * (`[ -t 2 ] && NO_PROGRESS != 1`), except the test is on stdout, since that is now
+ * Chooses between the ink chart and plain line output by testing stdout, which is
  * where human-readable output goes.
  */
 

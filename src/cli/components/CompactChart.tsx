@@ -3,7 +3,7 @@
  *
  * Capping at the terminal height is a CORRECTNESS requirement, not cosmetics: a
  * frame taller than the terminal breaks ink's frame diffing and produces repeating
- * frames. This is the direct port of the bash's `cap` (run-all.sh:253).
+ * frames.
  */
 import { Box } from "ink";
 import { orderedPerms, type RunState } from "#core/state";

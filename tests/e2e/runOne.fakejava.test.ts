@@ -198,7 +198,7 @@ describe("partial output is discarded, not published", () => {
 	});
 
 	it("does not count a zero-byte file toward copied", async () => {
-		// The bash used `[ -s ]`, not `[ -f ]`.
+		// Existence is not enough: the file has to have content.
 		const h = harness(["--fake-empty-file"], { maxAttempts: 1 });
 		const r = await runOne(h.opts);
 		expect(r.copied).toBe(2);
@@ -291,8 +291,8 @@ describe("watchdogs", () => {
 	}, 30_000);
 
 	it("reaps descendants by killing the process group", async () => {
-		// kill(-pgid) must reap a grandchild that the bash's recursive `pgrep -P` loop
-		// could race past (fork happens between the enumeration and the kill).
+		// kill(-pgid) must reap a grandchild. Walking the tree with pgrep -P instead
+		// races a fork happening between the enumeration and the kill.
 		let log = "";
 		const h = harness(["--fake-spawn-grandchild", "--fake-stop-after=45"], {
 			loginTimeoutMs: 60_000,

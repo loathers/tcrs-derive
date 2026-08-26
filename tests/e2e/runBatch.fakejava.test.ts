@@ -68,14 +68,14 @@ function config(dataDir: string, over: Partial<BatchConfig> = {}): BatchConfig {
 
 describe("startBatch preflight", () => {
 	it("throws synchronously on an unknown ONLY name", () => {
-		// The bash silently ran zero permutations and printed "Nothing to do".
+		// Silently running zero permutations is the failure mode being prevented.
 		expect(() =>
 			startBatch(config(tmp(), { only: ["tt_walaby"] }), allSecrets),
 		).toThrow(UnknownPermutationsError);
 	});
 
 	it("throws synchronously on missing passwords, before any JVM spawns", () => {
-		// The bash discovered this inside the worker, so one .env typo failed one
+		// Discovering this inside the worker instead means one .env typo fails one
 		// permutation 40 minutes into a batch.
 		const empty: SecretStore = {
 			passwordFor: () => {
@@ -147,8 +147,8 @@ describe("a full batch", () => {
 	}, 60_000);
 
 	it("writes a per-permutation log inside the run's own staging dir", async () => {
-		// Logs are never destructively wiped: run-all.sh:54 did `rm -f logs/*.log` at
-		// the START of a run, exactly when you want the previous run's logs.
+		// Logs are never destructively wiped. Clearing a shared log dir at the start
+		// of a run loses them exactly when you want the previous run's.
 		const data = tmp();
 		const handle = startBatch(
 			config(data, { only: ["at_blender"] }),
@@ -291,16 +291,16 @@ describe("RESUME", () => {
 
 		expect(skipped).toEqual(["at_blender"]);
 		expect(result.skipped).toBe(1);
-		// Skipped rows stay VISIBLE in the totals. The bash filtered them out of the
-		// task list, so resuming 52 of 54 displayed "Overall: 0/2 done".
+		// Skipped rows stay VISIBLE in the totals. Dropping them from the task list
+		// would make resuming 52 of 54 display "Overall: 0/2 done".
 		expect(handle.state.summary.total).toBe(2);
 		expect(handle.state.summary.skipped).toBe(1);
 		expect(handle.state.summary.done).toBe(1);
 	}, 60_000);
 
 	it("does NOT skip a permutation whose recorded derive was incomplete", async () => {
-		// The bash's already_done() trusted file existence + nonzero size, so it
-		// re-adopted exactly the truncated output the guard exists to reject.
+		// Trusting file existence and nonzero size would re-adopt exactly the
+		// truncated output the completeness guard exists to reject.
 		const data = tmp();
 		const at = present(permutationByUser("at_blender"));
 		const prev = await createStaging(data, "run-prev");
@@ -385,7 +385,7 @@ describe("the warm-up", () => {
 		});
 		const result = await handle.result;
 		expect(statuses).toContain("failed");
-		// Best-effort, exactly as the bash: the batch still runs.
+		// Warm-up is best-effort: the batch still runs without it.
 		expect(result.total).toBe(1);
 	}, 60_000);
 });

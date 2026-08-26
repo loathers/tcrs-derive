@@ -1,17 +1,15 @@
 /**
  * Non-TTY / --no-progress / --json output.
  *
- * Port of the bash's `[ -t 2 ] && NO_PROGRESS != 1` branch. ink writes each frame
- * sequentially when stdout is a pipe, which is unusable output, so a non-interactive
- * run takes a completely different path: one line per state transition.
+ * ink writes each frame sequentially when stdout is a pipe, which is unusable
+ * output, so a non-interactive run takes a completely different path: one line per
+ * state transition.
  *
- * TWO DELIBERATE FIXES to the bash's behaviour:
- *  - Human-readable output goes to STDOUT. Everything went to stderr before, so
- *    `./run-all.sh > out.txt` produced an empty file.
- *  - Retry/discard diagnostics are printed as they happen. The bash shunted them to
- *    logs/_run.log purely so they would not corrupt the chart, which hid
- *    "[user] retrying after incomplete attempt 1/3", the single most useful line
- *    when debugging flakiness.
+ * TWO RULES worth keeping:
+ *  - Human-readable output goes to STDOUT, so `tcrs run > out.txt` captures it.
+ *  - Retry/discard diagnostics are printed as they happen rather than hidden in a
+ *    log to keep the chart tidy. "[user] retrying after incomplete attempt 1/3" is
+ *    the single most useful line when debugging flakiness.
  */
 
 import type { RunEvent } from "#core/events";
@@ -68,7 +66,6 @@ export function createPlainReporter(o: PlainOptions) {
 				break;
 
 			case "perm:discarded":
-				// Was invisible during a bash run.
 				err(
 					`  WARN  ${event.user} derive did not complete (bailed early), discarding partial data`,
 				);
@@ -115,7 +112,7 @@ export function createPlainReporter(o: PlainOptions) {
 	};
 }
 
-/** The final OK/FAIL block, port of run-all.sh:281-304. */
+/** The final OK/FAIL block. */
 export function formatSummaryTable(state: RunState): string {
 	const lines: string[] = [];
 	lines.push("==================== SUMMARY ====================");

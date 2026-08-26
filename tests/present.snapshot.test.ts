@@ -6,8 +6,8 @@ import { freshState, happyPath, stamp } from "./helpers/events.ts";
 import { present } from "./helpers/present.ts";
 
 /**
- * Freezes the whole 54-row chart. This is the test that proves the port did not
- * change what the operator sees compared to run-all.sh's emit_frame().
+ * Freezes the whole 54-row chart, so any change to what the operator sees has to
+ * be a deliberate one rather than a side effect.
  */
 function render(state: RunState): string {
 	return [
@@ -93,8 +93,8 @@ describe("the 54-row chart", () => {
 
 describe("chart geometry", () => {
 	it("keeps every row the same width for a stable in-place redraw", () => {
-		// The bash relied on a fixed frame height and erase-to-EOL. ink diffs frames
-		// instead, but equal-width rows still matter for a tidy chart.
+		// ink diffs frames, so nothing depends on a fixed frame height, but
+		// equal-width rows still matter for a tidy chart.
 		const state = reduceAll(freshState(), stamp(happyPath("sc_mongoose")));
 		const bars = orderedPerms(state).map((p) => rowView(p).bar.length);
 		expect(new Set(bars)).toEqual(new Set([10]));

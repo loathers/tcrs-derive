@@ -137,7 +137,7 @@ async function main() {
 	const log = readFileSync(join(HERE, "logs", `${fixture}.log`), "utf8");
 	let emitted = 0;
 	for (const line of log.split("\n")) {
-		// The `=== attempt N/M ===` marker is a bash artifact, not mafia output.
+		// The `=== attempt N/M ===` marker is a harness artifact, not mafia output.
 		if (line.startsWith("=== attempt ")) continue;
 
 		// Rewrite the fixture's "Wrote file" lines to match the layout being emulated.

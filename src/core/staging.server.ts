@@ -1,10 +1,10 @@
 /**
  * Staging directories, the run manifest, and the atomic publish swap. NODE-ONLY.
  *
- * This is the machinery a web UI forces on us. run-one.sh copied files into the
- * live `out/` as each account finished, so mid-run the site would serve a mix of
- * old and new files. Runs now write to `runs/<runId>/` and become visible only via
- * one atomic symlink swap.
+ * This is the machinery a web UI forces on us. Copying files into the live output
+ * dir as each account finishes means the site serves a mix of old and new files for
+ * the length of the run. Runs instead write to `runs/<runId>/` and become visible
+ * only via one atomic symlink swap.
  *
  *   <dataDir>/
  *     state.json                       cooldown + attempt history (store.server.ts)
@@ -324,7 +324,7 @@ export async function writeAtomic(
 }
 
 /** Remove per-JVM scratch trees. Each is a full mafia data tree, so this is real
- *  disk, the bash reclaimed it per permutation and we do it per run as well. */
+ *  disk: reclaimed per permutation as it finishes, and again per run. */
 export async function clearWork(dataDir: string): Promise<void> {
 	const work = join(dataDir, WORK_DIR);
 	await rm(work, { recursive: true, force: true });

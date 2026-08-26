@@ -80,7 +80,7 @@ describe("LineSplitter hygiene", () => {
 		expect(s.flush()).toEqual([]);
 	});
 
-	it("strips NUL bytes, which corrupted the bash chart", () => {
+	it("strips NUL bytes, which corrupt any downstream rendering", () => {
 		const s = new LineSplitter();
 		expect(s.push("Prog\u0000ress: 1/2\u0000\n")).toEqual(["Progress: 1/2"]);
 	});

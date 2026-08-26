@@ -4,8 +4,7 @@
  * Arg parsing is node:util.parseArgs, three commands and ~18 flags do not justify
  * a dependency, and the help text below is the whole cost.
  *
- * Exit codes preserve the bash's: 0 all ok, 1 any failure (`[ "$bad" -eq 0 ]`),
- * 130 cancelled, 2 usage/preflight error.
+ * Exit codes: 0 all ok, 1 any failure, 130 cancelled, 2 usage/preflight error.
  */
 
 import { parseArgs } from "node:util";

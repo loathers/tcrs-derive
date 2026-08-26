@@ -6,14 +6,13 @@
  * components into a browser canvas, both views render from the same computed
  * `RowView`. ink turns it into <Text>; the web turns it into styled DOM.
  *
- * The formats below reproduce run-all.sh:129-206 BYTE-EXACTLY, so
- * tests/present.snapshot.test.ts can freeze today's chart and prove the port did
- * not change what the operator sees.
+ * The exact byte layout of every format below is frozen by
+ * tests/present.snapshot.test.ts, so a change to what the operator sees has to be
+ * a deliberate one rather than a side effect.
  */
 
 import type { PermState, RunSummary } from "./state.ts";
 
-/** run-all.sh:129. */
 export const BAR_WIDTH = 10;
 
 export const FILL_ACTIVE = "█"; // full block
@@ -33,8 +32,8 @@ export interface RowView {
 }
 
 /**
- * Port of make_bar (run-all.sh:131-139): floor-divide into BAR_WIDTH cells, clamp,
- * then pad with the empty glyph.
+ * Floor-divide the percentage into BAR_WIDTH cells, clamp, then pad with the empty
+ * glyph.
  */
 export function makeBar(pct: number, fill: string, width = BAR_WIDTH): string {
 	const filled = Math.min(width, Math.max(0, Math.floor((pct * width) / 100)));
@@ -84,7 +83,7 @@ export function progressPercent(p: PermState): number {
  *  mafia announces every 100 items and the total is not a multiple of 100. */
 const CAFE_PERCENT = 99;
 
-/** ` try 2/3`, or "" on the first attempt (run-all.sh:184-188). */
+/** ` try 2/3`, or "" on the first attempt. */
 function trySuffix(p: PermState): string {
 	return p.attempt > 1 ? ` try ${p.attempt}/${p.maxAttempts}` : "";
 }
@@ -123,9 +122,9 @@ export function rowView(p: PermState): RowView {
 
 		case "deriving": {
 			if (s.phase !== "items") {
-				// A full bar labelled with the phase, matching run-all.sh:194 byte for
-				// byte. The web cell shows a number instead and uses progressPercent(),
-				// which is why that is a separate derivation rather than this one.
+				// A full bar labelled with the phase: mafia emits no Progress: lines for
+				// the cafe phases, so there is no percentage to show. The web cell shows a
+				// number instead via progressPercent(), hence the separate derivation.
 				return row(
 					p,
 					100,
@@ -135,10 +134,9 @@ export function rowView(p: PermState): RowView {
 				);
 			}
 			// The items phase is the bulk and its percentage is meaningful. Before the
-			// first Progress: line it is legitimately 0, the bash defaulted pct=0 the
-			// same way (run-all.sh:180), so the bar starts empty rather than full.
+			// first Progress: line it is legitimately 0, so the bar starts empty rather
+			// than full.
 			const pct = s.progress === null ? 0 : percentFor(s.progress);
-			// run-all.sh:193, `printf '%3d%% items%s'`.
 			return row(
 				p,
 				pct,
@@ -206,16 +204,17 @@ export function cellLabel(p: PermState): string {
 }
 
 /**
- * `%-12s [bar] status` (run-all.sh:200). The longest username is 11 chars, so
- * padEnd(12) always pads, identical to printf's %-12s.
+ * `<user> [bar] status`. The longest username is 11 chars, so padEnd(12) always
+ * pads and the bars always line up.
  */
 export function formatRow(v: RowView): string {
 	return `${v.user.padEnd(12)} [${v.bar}] ${v.status}`;
 }
 
 /**
- * run-all.sh:204-205. Note the TWO spaces before the parenthesis, the bash format
- * string had them and the snapshot test pins them.
+ * Note the TWO spaces before the parenthesis. They are deliberate and the snapshot
+ * test pins them, so a tidy-up here fails the suite rather than silently reflowing
+ * every operator's chart.
  */
 export function summaryLine(s: RunSummary): string {
 	const skipped = s.skipped > 0 ? `, ${s.skipped} skipped` : "";

@@ -120,7 +120,7 @@ describe("selectPermutations", () => {
 		expect(selected.map((p) => p.user)).toEqual(["sc_vole", "tt_wallaby"]);
 	});
 
-	it("applies exclude before only, matching bash want_user order", () => {
+	it("applies exclude before only", () => {
 		const { selected } = selectPermutations({
 			only: ["tt_wallaby", "sc_vole"],
 			exclude: ["sc_vole"],
@@ -129,14 +129,14 @@ describe("selectPermutations", () => {
 	});
 
 	it("reports unknown names instead of silently running nothing", () => {
-		// The bash ran zero permutations and printed "Nothing to do" for a typo.
+		// A typo must not quietly run zero permutations and print "Nothing to do".
 		const { selected, unknown } = selectPermutations({ only: ["tt_walaby"] });
 		expect(unknown).toEqual(["tt_walaby"]);
 		expect(selected).toHaveLength(0);
 	});
 
 	it("treats empty filter strings as absent", () => {
-		// ONLY="" / EXCLUDE="" is how the bash spelled "unset".
+		// ONLY="" / EXCLUDE="" is how a shell spells "unset".
 		expect(
 			selectPermutations({ only: [""], exclude: [""] }).selected,
 		).toHaveLength(54);

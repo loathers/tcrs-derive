@@ -86,9 +86,8 @@ describe("the tolerance boundary", () => {
 
 describe("progress is scoped to the items phase", () => {
 	it("does not let a cafe phase overwrite the items progress", () => {
-		// The bash scoped this with `awk '/for all cafe/{exit}'` (run-one.sh:52).
 		// If a cafe phase could overwrite itemsProgress, a truncated items derive
-		// followed by cafe phases could look complete.
+		// followed by cafe phases would look complete.
 		const t = replay("partial-bail");
 		expect(t.phase).toBe("cafe_food");
 		expect(t.itemsProgress).toEqual({ done: 4001, total: 12070 });

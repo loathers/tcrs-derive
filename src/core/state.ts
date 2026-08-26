@@ -7,9 +7,6 @@
  *   - in the browser, folding the SSE stream
  *   - in `tcrs attach`, folding the same SSE stream
  * so the web page and the terminal chart provably cannot drift.
- *
- * The reference implementation is compute_states() in run-all.sh:145-206, which
- * re-derived all of this every 1.5s by grepping 54 growing log files.
  */
 
 import type { FailureReason, Phase, RunEvent } from "./events.ts";
@@ -32,9 +29,8 @@ export type PermStatus =
 			 * null during the cafe phases, because mafia emits no Progress: lines for
 			 * them. Keeping the reducer honest here is what makes it STRUCTURALLY
 			 * IMPOSSIBLE for a view to render a stale items percentage during a cafe
-			 * phase. The bash instead special-cased it in the renderer
-			 * (run-all.sh:192-196), which meant two renderers would each have to
-			 * re-derive the rule. See present.ts, where it lives exactly once.
+			 * phase. Special-casing it in each renderer instead would mean every view
+			 * re-deriving the same rule. See present.ts, where it lives exactly once.
 			 */
 			readonly progress: Progress | null;
 	  }
@@ -162,9 +158,9 @@ function recount(
 			case "skipped":
 				skipped++;
 				break;
-			// login / stalled / deriving / retrying all count as in-flight. Note the
-			// bash counted a permutation in retry-backoff as running while still
-			// displaying its previous phase. `retrying` is now an explicit status.
+			// login / stalled / deriving / retrying all count as in-flight. `retrying`
+			// is an explicit status rather than a permutation left displaying its
+			// previous phase for the length of the backoff.
 			case "login":
 			case "stalled":
 			case "deriving":
@@ -218,9 +214,9 @@ function apply(state: RunState, event: RunEvent): RunState {
 			};
 
 		case "batch:skipped":
-			// The bash filtered resume-skipped permutations out of the task list
-			// entirely, so they vanished from the chart AND the totals. Resuming 52 of
-			// 54 showed an alarming "Overall: 0/2 done". They are now visible rows.
+			// Skipped permutations stay as visible rows rather than being dropped from
+			// the task list. Dropping them takes them out of the totals too, so resuming
+			// 52 of 54 would report an alarming "Overall: 0/2 done".
 			return patch(state, event.user, () => ({
 				status: { kind: "skipped", reason: event.reason },
 			}));
@@ -235,8 +231,8 @@ function apply(state: RunState, event: RunEvent): RunState {
 			return patch(state, event.user, () => ({ status: { kind: "queued" } }));
 
 		case "perm:attempt":
-			// A new attempt resets everything attempt-scoped. This is what replaces the
-			// bash's `=== attempt N/M ===` marker and current_attempt_block() slicing.
+			// A new attempt resets everything attempt-scoped, so a retry never inherits
+			// the previous attempt's phase or progress.
 			return patch(state, event.user, (p) => ({
 				attempt: event.attempt,
 				maxAttempts: event.maxAttempts,
@@ -269,9 +265,9 @@ function apply(state: RunState, event: RunEvent): RunState {
 			}));
 
 		case "perm:transient":
-			// Mirrors the bash: a timeout marker shows as `stalled` only while we have
-			// not yet started deriving. Once a phase is running, transients are noise
-			// and the completeness guard handles the fallout.
+			// A transient marker means `stalled` only before deriving starts. Once a
+			// phase is running they are noise, and the completeness guard handles any
+			// real fallout.
 			return patch(state, event.user, (p) => ({
 				sawTransient: true,
 				status: p.status.kind === "login" ? { kind: "stalled" } : p.status,

@@ -108,8 +108,8 @@ describe("loadSecrets", () => {
 	});
 
 	it("preflights the whole selection at once", () => {
-		// The bash discovered this inside the worker (run-one.sh:20), so one typo
-		// failed one permutation 40 minutes into a batch.
+		// Discovering this inside the worker instead means one typo fails one
+		// permutation 40 minutes into a batch.
 		const store = loadSecrets({
 			envPath: "/nonexistent",
 			processEnv: { PASSWORD_TT_WALLABY: "x" },
@@ -164,7 +164,7 @@ describe("minimalEnv", () => {
 	});
 
 	it("never forwards a password, which is the whole point", () => {
-		// The bash leaked all 54 into /proc/<jvm-pid>/environ.
+		// A forwarded environment would put all 54 in /proc/<jvm-pid>/environ.
 		const out = minimalEnv({ PASSWORD_TT_WALLABY: "hunter2", PATH: "/bin" });
 		expect(Object.keys(out).some((k) => k.startsWith("PASSWORD_"))).toBe(false);
 	});

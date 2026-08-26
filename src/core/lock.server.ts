@@ -1,9 +1,9 @@
 /**
  * Single-instance lock. NODE-ONLY.
  *
- * Replaces run-all.sh:42-48, which was
- * `[ -f "$LOCK" ] && kill -0 "$(cat "$LOCK")"`, a TOCTOU race, and PID-reuse-prone:
- * a recycled pid made it refuse to start FOREVER.
+ * Checking for a lock file and then creating it is a TOCTOU race, and trusting a
+ * pid inside it is PID-reuse-prone: a recycled pid makes the tool refuse to start
+ * FOREVER. Hence an atomic create plus a heartbeat.
  *
  * WHY THIS IS NOT JUST A PID FILE.
  * The lock protects a DATA DIRECTORY, and in production that directory is a Docker

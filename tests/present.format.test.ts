@@ -11,8 +11,8 @@ import {
 import type { PermState, PermStatus } from "#core/state";
 
 /**
- * Byte-exact assertions against the bash formats in run-all.sh:129-206. If these
- * pass, the ink chart shows the operator exactly what the shell script did.
+ * Byte-exact assertions on every chart format, so a change to what the operator
+ * sees fails here rather than shipping unnoticed.
  */
 
 function perm(status: PermStatus, over: Partial<PermState> = {}): PermState {
@@ -38,7 +38,7 @@ describe("makeBar", () => {
 		expect(makeBar(50, "█")).toHaveLength(10);
 	});
 
-	it("floor-divides like the bash arithmetic", () => {
+	it("floor-divides, so a bar never rounds up to full early", () => {
 		// filled = pct * 10 / 100, integer division.
 		expect(makeBar(0, "█")).toBe("░".repeat(10));
 		expect(makeBar(9, "█")).toBe("░".repeat(10));
@@ -66,7 +66,7 @@ describe("percentFor", () => {
 	});
 });
 
-describe("row status strings match the bash printf formats", () => {
+describe("row status strings", () => {
 	const cases: Array<[string, PermStatus, string, Partial<PermState>?]> = [
 		["queued", { kind: "queued" }, "queued"],
 		["done", { kind: "done" }, "done"],
@@ -120,7 +120,7 @@ describe("row status strings match the bash printf formats", () => {
 	});
 
 	it("appends the try suffix from attempt 2 onwards", () => {
-		// run-all.sh:187, only shown when the attempt number exceeds 1.
+		// Only shown once the attempt number exceeds 1.
 		const items: PermStatus = {
 			kind: "deriving",
 			phase: "items",
@@ -169,7 +169,7 @@ describe("formatRow", () => {
 });
 
 describe("summaryLine", () => {
-	it("keeps the bash's two spaces before the parenthesis", () => {
+	it("keeps the two spaces before the parenthesis", () => {
 		expect(
 			summaryLine({
 				total: 54,

@@ -1,10 +1,10 @@
 /**
  * Streaming parser for KoLmafia's --CLI output.
  *
- * PURE: no `node:` imports. Replaces the bash's poll-and-grep layer entirely, * `last_progress` (common.sh:48-55), `derive_complete` (run-one.sh:50-56),
- * `current_attempt_block` (common.sh:41-44) and the 1.5s chart re-grep.
+ * PURE: no `node:` imports. Every line each JVM writes is classified here, once,
+ * as it arrives, and nothing downstream re-reads a log to work out what happened.
  *
- * THE REGEXES HERE ARE THE HIGHEST-RISK PART OF THE PORT. Every pattern is
+ * THE REGEXES HERE ARE THE HIGHEST-RISK PART OF THIS FILE. Every pattern is
  * grounded in the real logs committed under tests/fixtures/logs/. Across two full
  * successful runs, exactly five distinct lines match
  * /error|exception|timed out|unable|fail/i, and ALL FIVE ARE BENIGN:
@@ -23,8 +23,7 @@ import type { Phase } from "./events.ts";
 
 /**
  * "This attempt is doomed, but a retry might work", network blips where mafia's
- * Java client can't reach KoL even though the box can. Ported verbatim from
- * run-one.sh:41, which applied it with `grep -qiE` (case-insensitive).
+ * Java client can't reach KoL even though the box can. Matched case-insensitively.
  *
  * Two single-character traps, both load-bearing:
  *  - `IOException retrieving` (no space) vs the benign `IO Exception for` (space).
@@ -36,8 +35,8 @@ export const TRANSIENT_RE =
 	/connect timed out|connection timed out|read timed out|IOException retrieving server reply|Connection reset|Unable to (?:establish|connect)/i;
 
 /**
- * The account genuinely started deriving, login worked, don't kill it.
- * run-one.sh:43, applied case-sensitively.
+ * The account genuinely started deriving, login worked, don't kill it. Matched
+ * case-sensitively: the capitalisation is mafia's own and is stable.
  */
 export const STARTED_RE =
 	/Deriving TCRS item adjustments for all real items|Progress: /;
@@ -99,8 +98,7 @@ export function classifyLine(line: string): ParsedLine {
 	if (progress) {
 		const done = Number(progress[1]);
 		const total = Number(progress[2]);
-		// A zero or absent total would make every percentage a division by zero;
-		// last_progress() rejected it the same way (common.sh:53).
+		// A zero or absent total would make every percentage a division by zero.
 		if (Number.isFinite(done) && Number.isFinite(total) && total > 0) {
 			return { kind: "progress", done, total };
 		}
@@ -130,16 +128,16 @@ export function classifyLine(line: string): ParsedLine {
 const ANSI_RE = /\u001B\[[0-9;?]*[A-Za-z]/g;
 
 function clean(line: string): string {
-	// NULs: mafia sometimes writes them, and they made bash's command substitution
-	// warn and corrupted the chart (common.sh:38-39).
+	// NULs: mafia writes them occasionally, and they corrupt any downstream
+	// rendering that assumes text.
 	return line.replace(/\0/g, "").replace(ANSI_RE, "").replace(/\r/g, "");
 }
 
 /**
  * Incremental line splitter over a byte stream.
  *
- * The bash merged stdout and stderr at fd level (`>> "$log" 2>&1`), which can
- * splice two half-lines into one nonsense line. We run one splitter per stream.
+ * One splitter per stream, never one shared between them: merging stdout and
+ * stderr at fd level can splice two half-written lines into one nonsense line.
  */
 export class LineSplitter {
 	#pending = "";
@@ -166,16 +164,16 @@ export class LineSplitter {
 /**
  * Accumulates the state of one derive attempt from classified lines.
  *
- * One tracker per attempt: allocating a fresh one is what replaces the bash's
- * `=== attempt N/M ===` log marker and `current_attempt_block()` slicing.
+ * One tracker per attempt. Allocating a fresh one is what scopes this state to a
+ * single attempt, so a retry can never inherit the previous attempt's progress.
  */
 export class DeriveTracker {
 	phase: Phase | null = null;
 	/** Progress for the CURRENT phase, reset on each phase change. */
 	progress: { done: number; total: number } | null = null;
 	/** Last progress seen during the `items` phase specifically. This, not the
-	 *  current phase's progress, is what completeness is judged on, the bash scoped
-	 *  it with `awk '/for all cafe/{exit}'` (run-one.sh:52). */
+	 *  current phase's progress, is what completeness is judged on: the cafe phases
+	 *  run afterwards and would otherwise overwrite the number that matters. */
 	itemsProgress: { done: number; total: number } | null = null;
 	started = false;
 	sawTransient = false;
@@ -225,15 +223,15 @@ export class DeriveTracker {
 	}
 }
 
-/** Default COMPLETE_TOLERANCE (run-one.sh:31). */
+/** Default COMPLETE_TOLERANCE. */
 export const COMPLETE_TOLERANCE = 150;
 
 /**
  * Did the real-items derive actually finish?
  *
  * A mafia parallel derive bails out, but still prints "Done!" and saves a PARTIAL
- * file, if any single item's description fetch errors (run-one.sh:44-56). So file
- * existence is not enough.
+ * file, if any single item's description fetch errors. So file existence is not
+ * enough to conclude the derive succeeded.
  *
  * The tolerance must exceed mafia's 100-item announce step. Observed across all the
  * real logs: the total is 12070 and the last line is always `Progress: 12001/12070`

@@ -1,8 +1,8 @@
 /**
  * `tcrs list`, the 54 permutations, and optionally which passwords are missing.
  *
- * `--check-env` is the preflight the bash lacked: it discovered a missing password
- * inside run-one.sh:20, so one .env typo failed one permutation 40 minutes into a
+ * `--check-env` is the preflight: without it a missing password is discovered
+ * inside the worker, so one .env typo fails one permutation 40 minutes into a
  * batch.
  */
 

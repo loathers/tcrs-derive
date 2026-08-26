@@ -1,11 +1,10 @@
 /**
  * Secret handling. NODE-ONLY.
  *
- * This file fixes the most serious defect in the bash implementation. The README
- * instructed `export $(grep -v '^#' .env | xargs)`, and that environment was
- * inherited run-all.sh -> xargs -> run-one.sh -> the JVM. So
- * `/proc/<jvm-pid>/environ` exposed ALL 54 PASSWORDS to any process running as the
- * same user. On a shared box that is a serious leak.
+ * The obvious way to load 54 passwords is to export them into the environment, and
+ * it leaks: the environment is inherited all the way down to each JVM, so
+ * `/proc/<jvm-pid>/environ` exposes ALL 54 PASSWORDS to any process running as the
+ * same user. On a shared box that is serious. Hence the rules below.
  *
  * Three rules, all enforced here:
  *   1. parseDotenv returns a Map and never touches process.env.

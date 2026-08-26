@@ -1,11 +1,9 @@
 /**
- * The per-permutation worker. NODE-ONLY. Faithful port of run-one.sh.
+ * The per-permutation worker. NODE-ONLY.
  *
- * What disappears relative to the bash, because Node has real IPC: the
- * `=== attempt N/M ===` log marker, `current_attempt_block()`, the `.exit` and
- * `.done` sentinel files, the byte-offset `this_attempt()` bookkeeping, and the 3s
- * and 5s polling loops. Per-attempt scoping is now "allocate a fresh DeriveTracker";
- * liveness is the child's 'close' event.
+ * Runs one KoLmafia JVM to completion, retrying on transient failures, and reports
+ * everything it learns as events. Per-attempt state is scoped by allocating a fresh
+ * DeriveTracker; liveness is the child's 'close' event rather than any polling.
  */
 
 import { type ChildProcess, spawn } from "node:child_process";
@@ -77,7 +75,7 @@ export interface RunOneOptions {
 	timeoutMs: number;
 	retryBackoffMs: number;
 	completeTolerance?: number;
-	/** Opt-in, default off. The bash burned the full timeout on a wedged derive. */
+	/** Opt-in, default off. Without it a wedged derive burns the full timeout. */
 	stallTimeoutMs?: number | null;
 	keepWorkdir?: boolean;
 	signal?: AbortSignal | undefined;
@@ -263,8 +261,8 @@ async function runAttempt(
 			cwd: o.workDir,
 			// detached: true calls setsid(2), so the child leads its own process group
 			// and process.kill(-pid) reaps the JVM AND every descendant atomically.
-			// This is strictly better than the bash's recursive pgrep kill_tree, which
-			// raced between a fork and pgrep -P enumerating it.
+			// Signalling the group is atomic, where walking the tree with repeated
+			// pgrep -P races against a fork happening mid-enumeration.
 			detached: true,
 			stdio: ["pipe", "pipe", "pipe"],
 			env: minimalEnv(),
@@ -309,8 +307,8 @@ async function runAttempt(
 		outcome ??= o2;
 	};
 
-	// One splitter per stream: merging them at fd level (as the bash did with
-	// `>> "$log" 2>&1`) can splice two half-lines into one nonsense line.
+	// One splitter per stream. Merging them at fd level (`2>&1`) can splice two
+	// half-written lines into a single nonsense one.
 	const handle = (stream: NodeJS.ReadableStream | null) => {
 		if (!stream) return;
 		const splitter = new LineSplitter();
@@ -345,9 +343,8 @@ async function runAttempt(
 				break;
 			case "transient":
 				emit({ type: "perm:transient", user: p.user, marker: parsed.marker });
-				// The bash consulted TRANSIENT_RE ONLY while !started. After deriving
-				// begins a transient is ignored and the completeness guard catches the
-				// fallout. Preserve that exactly.
+				// Transients count ONLY before deriving starts. Once it is under way they
+				// are noise, and the completeness guard catches any real fallout.
 				if (!tracker.started) finish("transient");
 				break;
 			case "notInTcrs":
@@ -385,11 +382,11 @@ async function runAttempt(
 		});
 	});
 
-	// --- Watchdogs, replacing the bash's 3s/5s poll loops --------------------
+	// --- Watchdogs ------------------------------------------------------------
 	const timers: NodeJS.Timeout[] = [];
 
-	// The hard timeout is armed AT SPAWN, matching the bash's `begin` (set before
-	// start_run) rather than at derive start. Easy to get wrong.
+	// Armed AT SPAWN, not at derive start: login can itself wedge, and a timeout
+	// that only starts counting once deriving begins would never fire for that.
 	timers.push(
 		setTimeout(() => {
 			emit({
@@ -452,8 +449,8 @@ async function runAttempt(
 }
 
 /**
- * TERM the whole process group, then KILL if it doesn't die. Mirrors the bash's
- * end_run (run-one.sh:90-97): TERM, up to 3s, then KILL.
+ * TERM the whole process group, then KILL if it does not die within 3s. The grace
+ * period lets mafia flush and exit cleanly rather than leaving a torn data dir.
  */
 async function kill(
 	child: ChildProcess,
@@ -496,7 +493,8 @@ async function seedWorkdir(o: RunOneOptions): Promise<void> {
 			verbatimSymlinks: true,
 		});
 	} catch (e) {
-		// The bash swallowed this with `|| true`. Surface it as a warning instead.
+		// Seeding is best-effort, but a failure here means the JVM re-downloads
+		// everything, so it is worth surfacing rather than swallowing.
 		o.emit({
 			type: "warn",
 			user: o.permutation.user,
@@ -526,11 +524,11 @@ const OUTPUT_DIRS = ["data/TCRS", "data"] as const;
 /**
  * Copy the three files into the staging output dir.
  *
- * Two differences from the bash, both deliberate:
- *  - size > 0 is required (`[ -s ]`, not `[ -f ]`), a zero-byte file must not
- *    count toward `copied`.
- *  - written to `.<name>.part` then renamed, so a torn copy can never be mistaken
- *    for good data. The bash cp'd non-atomically straight into the live out/.
+ * Two rules, both load-bearing:
+ *  - size > 0 is required, not merely existence: a zero-byte file must never count
+ *    toward `copied`.
+ *  - written to `.<name>.part` and then renamed, so a torn copy can never be
+ *    mistaken for good data by anything reading the directory concurrently.
  */
 async function collect(o: RunOneOptions): Promise<{ copied: number }> {
 	let copied = 0;

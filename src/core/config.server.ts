@@ -1,17 +1,17 @@
 /**
  * Configuration defaults and env resolution. NODE-ONLY.
  *
- * Every default matches the bash (README's env-var table), except CONCURRENCY, * see the comment there.
+ * Every default here is mirrored in the README's env-var table.
  */
 
 import type { BatchConfig } from "./runBatch.server.ts";
 
 export const DEFAULTS = {
 	/**
-	 * The bash defaulted to 4 and was run at 6. In a container a memory limit is a
-	 * HARD ceiling where a VPS's RAM is soft, and an OOM-killed JVM mid-derive costs
-	 * a whole permutation, so default lower and let the operator raise it after
-	 * watching real RSS. The other constraint is unchanged: 54 logins from one IP.
+	 * Deliberately conservative. In a container a memory limit is a HARD ceiling
+	 * where a VPS's RAM is soft, and an OOM-killed JVM mid-derive costs a whole
+	 * permutation, so default low and let the operator raise it after watching real
+	 * RSS. The other constraint is KoL's: 54 logins from one IP.
 	 */
 	concurrency: 3,
 	timeoutMs: 1_800_000, // TIMEOUT=1800
@@ -19,7 +19,7 @@ export const DEFAULTS = {
 	maxAttempts: 3, // MAX_ATTEMPTS=3
 	retryBackoffMs: 15_000, // RETRY_BACKOFF=15
 	completeTolerance: 150, // COMPLETE_TOLERANCE=150
-	warmupTimeoutMs: 300_000, // the bash's `sleep 300` killer
+	warmupTimeoutMs: 300_000, // WARMUP_TIMEOUT=300
 	stallTimeoutMs: null as number | null, // new, opt-in
 	cooldownHours: 12,
 	/** A total failure costs KoL nothing; locking a public site for 12h over one is

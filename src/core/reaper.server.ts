@@ -3,8 +3,8 @@
  *
  * Every JVM is spawned `detached: true`, which setsid()s it into its own process
  * group. That is what makes kill(-pgid) reap a whole JVM subtree atomically, but it
- * also means a SIGTERM to us does NOT reach them. This module is the obligation the
- * bash met with `disown` plus an EXIT trap.
+ * also means a SIGTERM to us does NOT reach them, so tearing them down is this
+ * module's job and nothing else's.
  *
  * IN DOCKER THIS MATTERS TWICE OVER. A detached JVM that outlives its parent is
  * reparented to PID 1, and Node as PID 1 does not reap children, they become

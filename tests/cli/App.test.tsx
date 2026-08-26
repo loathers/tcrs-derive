@@ -43,7 +43,7 @@ describe("Chart", () => {
 		);
 	});
 
-	it("reproduces the bash row format byte for byte", () => {
+	it("renders the row format byte for byte", () => {
 		const state = midRun();
 		const { lastFrame } = render(<Chart state={state} />);
 		const lines = plain(lastFrame()).split("\n");
@@ -108,7 +108,7 @@ describe("CompactChart", () => {
 
 	it("caps its height, which is a correctness requirement not cosmetics", () => {
 		// A frame taller than the terminal breaks ink's frame diffing and produces
-		// repeating frames. Direct port of the bash's `cap` (run-all.sh:253).
+		// repeating frames.
 		const busy = reduceAll(
 			freshState(),
 			stamp(

@@ -1,4 +1,4 @@
-/** The `Overall: 12/54 done  (...)` line (run-all.sh:204-205). */
+/** The `Overall: 12/54 done  (...)` line. */
 import { Text } from "ink";
 import { summaryLine } from "#core/present";
 import type { RunSummary } from "#core/state";

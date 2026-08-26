@@ -1,4 +1,4 @@
-/** One chart row: `%-12s [bar] status`, matching run-all.sh:200 byte for byte. */
+/** One chart row: `<user> [bar] status`. */
 import { Box, Text } from "ink";
 import { rowView } from "#core/present";
 import type { PermState } from "#core/state";

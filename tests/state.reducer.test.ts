@@ -96,7 +96,6 @@ describe("reduceRunState", () => {
 
 describe("retries", () => {
 	it("resets phase and progress when a new attempt begins", () => {
-		// The bash scoped parsing to the current attempt block to get this right.
 		const s = reduceAll(
 			freshState(),
 			stamp([
@@ -135,7 +134,7 @@ describe("retries", () => {
 	});
 
 	it("surfaces an explicit retrying status during the backoff", () => {
-		// The bash showed the stale previous phase for the whole 15/30s wait.
+		// Without it the row shows the stale previous phase for the whole 15/30s wait.
 		const s = reduceAll(
 			freshState(),
 			stamp([
@@ -182,8 +181,8 @@ describe("retries", () => {
 		);
 		expect(present(before.perms.tt_wallaby).status.kind).toBe("stalled");
 
-		// Once deriving is under way, a transient is noise: the bash only consulted
-		// TRANSIENT_RE while !started, and the completeness guard handles the rest.
+		// Once deriving is under way a transient is noise, and the completeness
+		// guard handles the rest.
 		const after = reduceAll(
 			freshState(),
 			stamp([
@@ -219,8 +218,8 @@ describe("retries", () => {
 
 describe("skipped permutations stay visible", () => {
 	it("counts resume-skipped rows instead of dropping them", () => {
-		// The bash filtered them out of the task list, so resuming 52 of 54 displayed
-		// "Overall: 0/2 done".
+		// Filtering them out of the task list would drop them from the totals too,
+		// so resuming 52 of 54 would display "Overall: 0/2 done".
 		const s = reduceAll(
 			freshState(),
 			stamp(

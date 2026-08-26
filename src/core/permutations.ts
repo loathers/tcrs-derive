@@ -3,9 +3,6 @@
  *
  * PURE: no `node:` imports, ever. Imported by the browser bundle, the ink CLI and
  * the server alike. See tests/core.purity.test.ts.
- *
- * Ported from run-all.sh:58-65 (class_token / CLASS_ORDER / SIGNS) and
- * common.sh:32-35 (tcrs_files). The bash `to_lower`/`to_upper` helpers are gone, * they existed only because macOS ships bash 3.2, which lacks ${x,,}/${x^^}.
  */
 
 /** Class abbreviations, in the order the progress chart lists them. */
@@ -46,7 +43,7 @@ export const SIGNS = [
 ] as const;
 export type Sign = (typeof SIGNS)[number];
 
-/** The three data files KoLmafia writes per permutation (common.sh:14). */
+/** The three data files KoLmafia writes per permutation. */
 export const TCRS_SUFFIXES = ["", "_cafe_booze", "_cafe_food"] as const;
 
 /** Which of the three files a name refers to. */
@@ -74,7 +71,7 @@ export interface Permutation {
 
 /**
  * The three TCRS output basenames for a permutation, the single source of truth
- * for the filename scheme the whole tool is built around (common.sh:32-35).
+ * for the filename scheme the whole tool is built around.
  */
 /**
  * The env var holding a permutation's password, e.g. "PASSWORD_TT_WALLABY".
@@ -176,18 +173,19 @@ export interface SelectOptions {
 export interface Selection {
 	readonly selected: Permutation[];
 	readonly excluded: Permutation[];
-	/** Names in `only`/`exclude` matching no permutation. The bash silently ignored
-	 *  these: `ONLY=tt_walaby` ran zero permutations and printed "Nothing to do". */
+	/** Names in `only`/`exclude` matching no permutation. Reported rather than
+	 *  ignored: `ONLY=tt_walaby` should say so, not run zero permutations and
+	 *  print "Nothing to do". */
 	readonly unknown: string[];
 }
 
 /**
  * Apply the ONLY/EXCLUDE filters. EXCLUDE is applied first, then ONLY as an
- * allow-list, the order run-all.sh's want_user() used (run-all.sh:87-91).
+ * allow-list.
  */
 export function selectPermutations(o: SelectOptions = {}): Selection {
-	// An empty list must mean "no filter", not "allow nothing", ONLY="" is how the
-	// bash spelled unset, and a list of only blanks reduces to the same thing.
+	// An empty list must mean "no filter", not "allow nothing": ONLY="" is how a
+	// shell spells unset, and a list of only blanks reduces to the same thing.
 	const onlyList = o.only?.filter((s) => s.length > 0) ?? [];
 	const only = onlyList.length > 0 ? onlyList : undefined;
 	const exclude = new Set(o.exclude?.filter((s) => s.length > 0) ?? []);

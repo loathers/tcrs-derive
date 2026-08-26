@@ -2,10 +2,9 @@
  * The ink app. Renders a StateSource, so `tcrs run` and `tcrs attach` share this
  * component tree verbatim, the only difference is where the RunState comes from.
  *
- * What ink deletes relative to the bash: the cursor-up `\x1b[%dA` redraw, the
- * erase-to-EOL on every line, the fixed-frame-height contract, and the cursor
- * hide/show plus its EXIT trap, roughly 40 lines of ANSI arithmetic in
- * run-all.sh:129-273. ink's reconciler diffs frames for us.
+ * ink's reconciler diffs frames, so none of the usual terminal-chart machinery is
+ * here: no cursor-up redraw, no erase-to-EOL, no fixed-frame-height contract, and
+ * no cursor hide/show trap.
  */
 
 import { Box, Text, useApp, useInput } from "ink";
@@ -25,8 +24,8 @@ export function App({ source }: { source: StateSource }) {
 
 	// Ctrl-C / q: cancel, then let the run tear its JVMs down before unmounting.
 	// ink's default exitOnCtrlC would exit IMMEDIATELY and orphan every JVM, which
-	// is why render() passes exitOnCtrlC: false. This is the analogue of the bash's
-	// stop_all trap and the single easiest thing to get wrong in this port.
+	// is why render() passes exitOnCtrlC: false. The single easiest thing here to
+	// get wrong.
 	useInput((input, key) => {
 		if (key.ctrl && input === "c") {
 			requestCancel();
