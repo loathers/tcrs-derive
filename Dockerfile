@@ -85,7 +85,7 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     DATA_DIR=/data \
     JAR=/app/KoLmafia.jar \
-    # 3 rather than the bash's 4: a container memory limit is a HARD ceiling where
+    # Deliberately conservative: a container memory limit is a HARD ceiling where
     # a VPS's RAM is soft, and an OOM-killed JVM mid-derive costs a whole
     # permutation. Raise it once you have watched real RSS.
     CONCURRENCY=3 \
