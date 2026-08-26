@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
 	classifyLine,
-	DeriveTracker,
+	IntrospectTracker,
 	LineSplitter,
 	TRANSIENT_RE,
 } from "#core/parser";
@@ -21,7 +21,7 @@ const BENIGN_REAL_LINES = [
 	// `Unable to (establish|connect)` rather than a bare `Unable to`.
 	"Unable to invoke no",
 	" > Unable to invoke no",
-	// Mid-derive in runs that completed.
+	// Mid-run in runs that completed.
 	"Unexpected error, debug log printed.",
 	// `IO Exception for` (with a space) vs the transient `IOException retrieving`.
 	"IO Exception for TCRS_Accordion_Thief_Blender.txt: java.io.FileNotFoundException: /tmp/tcrs-work (No such file or directory)",
@@ -76,7 +76,7 @@ describe("transient classification: true positives", () => {
 		expect(classifyLine(line).kind).toBe("transient");
 	});
 
-	it("flags the transient-login fixture and never starts deriving", () => {
+	it("flags the transient-login fixture and never starts introspecting", () => {
 		const tracker = replay("transient-login");
 		expect(tracker.sawTransient).toBe(true);
 		expect(tracker.started).toBe(false);
@@ -90,10 +90,10 @@ describe("transient classification: true positives", () => {
 	});
 });
 
-function replay(fixture: string): DeriveTracker {
+function replay(fixture: string): IntrospectTracker {
 	const text = readFileSync(`tests/fixtures/logs/${fixture}.log`, "utf8");
 	const splitter = new LineSplitter();
-	const tracker = new DeriveTracker();
+	const tracker = new IntrospectTracker();
 	for (const line of [...splitter.push(text), ...splitter.flush()]) {
 		tracker.accept(line);
 	}

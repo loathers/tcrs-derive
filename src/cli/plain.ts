@@ -67,7 +67,7 @@ export function createPlainReporter(o: PlainOptions) {
 
 			case "perm:discarded":
 				err(
-					`  WARN  ${event.user} derive did not complete (bailed early), discarding partial data`,
+					`  WARN  ${event.user} introspect did not complete (bailed early), discarding partial data`,
 				);
 				break;
 

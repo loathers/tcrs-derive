@@ -11,7 +11,7 @@
  *
  *   Error during session initialization           (in 54/54 successful runs)
  *   Unable to invoke no                           (108x across successes)
- *   Unexpected error, debug log printed.          (mid-derive, run completed)
+ *   Unexpected error, debug log printed.          (mid-run, run completed)
  *   IO Exception for TCRS_....txt: FileNotFound   (every run. Mafia probing)
  *   Local file TCRS_....txt does not exist.       (every run)
  *
@@ -35,7 +35,7 @@ export const TRANSIENT_RE =
 	/connect timed out|connection timed out|read timed out|IOException retrieving server reply|Connection reset|Unable to (?:establish|connect)/i;
 
 /**
- * The account genuinely started deriving, login worked, don't kill it. Matched
+ * The account genuinely started introspecting, login worked, don't kill it. Matched
  * case-sensitively: the capitalisation is mafia's own and is stable.
  */
 export const STARTED_RE =
@@ -165,12 +165,12 @@ export class LineSplitter {
 }
 
 /**
- * Accumulates the state of one derive attempt from classified lines.
+ * Accumulates the state of one introspect attempt from classified lines.
  *
  * One tracker per attempt. Allocating a fresh one is what scopes this state to a
  * single attempt, so a retry can never inherit the previous attempt's progress.
  */
-export class DeriveTracker {
+export class IntrospectTracker {
 	phase: Phase | null = null;
 	/** Progress for the CURRENT phase, reset on each phase change. */
 	progress: { done: number; total: number } | null = null;
@@ -193,7 +193,7 @@ export class DeriveTracker {
 				this.phase = parsed.phase;
 				this.progress = null;
 				// Matches STARTED_RE's first alternative: the real-items header alone
-				// means login worked and deriving has begun.
+				// means login worked and introspecting has begun.
 				if (parsed.phase === "items") this.started = true;
 				break;
 			case "progress":
@@ -201,7 +201,7 @@ export class DeriveTracker {
 				this.started = true;
 				// Only the items phase emits Progress:. A progress line seen before any
 				// phase header is attributed to items, since that is the only reporting
-				// phase and STARTED_RE treats it as the start of deriving.
+				// phase and STARTED_RE treats it as the start of introspecting.
 				if (this.phase === "items" || this.phase === null) {
 					this.itemsProgress = { done: parsed.done, total: parsed.total };
 				}
@@ -230,11 +230,11 @@ export class DeriveTracker {
 export const COMPLETE_TOLERANCE = 150;
 
 /**
- * Did the real-items derive actually finish?
+ * Did the real-items introspect actually finish?
  *
- * A mafia parallel derive bails out, but still prints "Done!" and saves a PARTIAL
+ * A mafia parallel introspect bails out, but still prints "Done!" and saves a PARTIAL
  * file, if any single item's description fetch errors. So file existence is not
- * enough to conclude the derive succeeded.
+ * enough to conclude the introspect succeeded.
  *
  * The tolerance must exceed mafia's 100-item announce step. Observed across all the
  * real logs: the total is 12070 and the last line is always `Progress: 12001/12070`
@@ -245,8 +245,8 @@ export const COMPLETE_TOLERANCE = 150;
  * Returns false when no progress was ever seen: "3 files present, no progress" must
  * be discarded, not accepted.
  */
-export function isDeriveComplete(
-	tracker: DeriveTracker,
+export function isIntrospectComplete(
+	tracker: IntrospectTracker,
 	tolerance = COMPLETE_TOLERANCE,
 ): boolean {
 	const p = tracker.itemsProgress;

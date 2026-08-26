@@ -278,10 +278,10 @@ describe("publishing", () => {
 		expect(status.cooldown.remainingMs).toBeGreaterThan(0);
 	}, 120_000);
 
-	it("publishes a partial run that derived fewer permutations than the last one", async () => {
+	it("publishes a partial run that introspected fewer permutations than the last one", async () => {
 		const dataDir = tmp();
 
-		// Run 1: both permutations derive. 6 files published.
+		// Run 1: both permutations introspect. 6 files published.
 		const first = await manager(
 			{ only: ["at_blender", "at_packrat"] },
 			allSecrets,
@@ -315,7 +315,7 @@ describe("publishing", () => {
 
 		const after = present((await second.manager.status()).dataset);
 		// The run must reach the dataset: one flaky permutation is not a reason to bin
-		// three fresh files and eight minutes of derive.
+		// three fresh files and eight minutes of introspect.
 		expect(after.runId).not.toBe(before.runId);
 		expect(after.outcome).toBe("partial");
 		// 3 fresh + 3 carried forward from run 1: coverage held, it did not regress.

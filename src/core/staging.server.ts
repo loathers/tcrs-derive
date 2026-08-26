@@ -89,12 +89,12 @@ export interface RunManifest {
 	 * ManifestEntry.sourceRunId records per file -- with one deliberate asymmetry.
 	 *
 	 * A permutation this run never attempted keeps the result of the run that
-	 * derived its carried files. A permutation this run attempted AND FAILED keeps
+	 * produced its carried files. A permutation this run attempted AND FAILED keeps
 	 * its own failed result even though its files were carried, so the manifest
 	 * reports filesCopied: 0 against three entries that are present.
 	 *
 	 * That asymmetry is what resumableUsers wants: ok: false there makes the next
-	 * --resume re-derive a permutation whose only files are stale, rather than
+	 * --resume re-introspect a permutation whose only files are stale, rather than
 	 * adopting them as this run's work.
 	 */
 	results: PermutationResult[];
@@ -401,7 +401,7 @@ export async function publishRun(
 				)
 			: [];
 
-	// Fresh wins; carried entries keep the sourceRunId of the run that derived them.
+	// Fresh wins; carried entries keep the sourceRunId of the run that produced them.
 	const byName = new Map(carried.map((e) => [e.name, e]));
 	for (const e of input.entries) byName.set(e.name, e);
 	const entries = [...byName.values()].sort((a, b) =>
@@ -410,7 +410,7 @@ export async function publishRun(
 
 	// Results follow their files. resumableUsers joins entries against results, so a
 	// permutation whose files were carried but whose result was dropped would look
-	// un-derived and be run again from scratch on the next --resume.
+	// un-introspected and be run again from scratch on the next --resume.
 	const carriedUsers = new Set(carried.map((e) => e.user));
 	const byUser = new Map(input.results.map((r) => [r.user, r]));
 	for (const r of previousManifest?.results ?? []) {

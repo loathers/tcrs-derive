@@ -228,7 +228,7 @@ async function execute(
 	// --- Jar refresh -------------------------------------------------------
 	// A run is the moment to pick up a new KoLmafia: releases only land between runs,
 	// and one HTTP request is nothing against an 8-minute batch. Best-effort by
-	// design, since GitHub being unreachable is not a reason to skip a derive.
+	// design, since GitHub being unreachable is not a reason to skip a run.
 	let jarPath = cfg.jarPath;
 	if (cfg.refreshJar !== undefined && todo.length > 0 && !signal.aborted) {
 		try {
@@ -422,7 +422,7 @@ async function execute(
  * Users whose published output is trustworthy enough to skip.
  *
  * Manifest-driven: an entry exists only if the file was indexed at publish time,
- * and the run's own results record whether the derive actually completed.
+ * and the run's own results record whether the introspect actually completed.
  */
 async function resumableUsers(dataDir: string): Promise<Set<string>> {
 	const out = new Set<string>();

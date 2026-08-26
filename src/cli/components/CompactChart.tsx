@@ -10,7 +10,7 @@ import { orderedPerms, type RunState } from "#core/state";
 import { OverallSummary } from "./OverallSummary.tsx";
 import { PermutationRow } from "./PermutationRow.tsx";
 
-const RUNNING = new Set(["login", "stalled", "deriving", "retrying"]);
+const RUNNING = new Set(["login", "stalled", "introspecting", "retrying"]);
 
 export function CompactChart({
 	state,

@@ -26,11 +26,11 @@ describe("the 54-row chart", () => {
 		const events: RunEventInit[] = [
 			// done
 			...happyPath("sc_mongoose"),
-			// deriving items, mid-way
+			// introspecting items, mid-way
 			{ type: "perm:attempt", user: "sc_wallaby", attempt: 1, maxAttempts: 3 },
 			{ type: "perm:phase", user: "sc_wallaby", phase: "items" },
 			{ type: "perm:progress", user: "sc_wallaby", done: 2200, total: 12070 },
-			// deriving items on a retry
+			// introspecting items on a retry
 			{ type: "perm:attempt", user: "sc_vole", attempt: 2, maxAttempts: 3 },
 			{ type: "perm:phase", user: "sc_vole", phase: "items" },
 			{ type: "perm:progress", user: "sc_vole", done: 11000, total: 12070 },

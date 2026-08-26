@@ -3,7 +3,7 @@
  *
  * Runs one KoLmafia JVM to completion, retrying on transient failures, and reports
  * everything it learns as events. Per-attempt state is scoped by allocating a fresh
- * DeriveTracker; liveness is the child's 'close' event rather than any polling.
+ * IntrospectTracker; liveness is the child's 'close' event rather than any polling.
  */
 
 import { type ChildProcess, spawn } from "node:child_process";
@@ -21,8 +21,8 @@ import { minimalEnv } from "./env.server.ts";
 import type { FailureReason, RunEventInit } from "./events.ts";
 import {
 	COMPLETE_TOLERANCE,
-	DeriveTracker,
-	isDeriveComplete,
+	IntrospectTracker,
+	isIntrospectComplete,
 	LineSplitter,
 } from "./parser.ts";
 import type { Permutation } from "./permutations.ts";
@@ -87,7 +87,7 @@ export interface RunOneOptions {
 	timeoutMs: number;
 	retryBackoffMs: number;
 	completeTolerance?: number;
-	/** Opt-in, default off. Without it a wedged derive burns the full timeout. */
+	/** Opt-in, default off. Without it a wedged introspect burns the full timeout. */
 	stallTimeoutMs?: number | null;
 	keepWorkdir?: boolean;
 	signal?: AbortSignal | undefined;
@@ -116,7 +116,7 @@ export async function runOne(o: RunOneOptions): Promise<RunOneResult> {
 	let copied = 0;
 	let attempt = 0;
 	let reason: FailureReason | undefined;
-	let lastTracker: DeriveTracker | null = null;
+	let lastTracker: IntrospectTracker | null = null;
 
 	while (attempt < maxAttempts) {
 		if (signal?.aborted) {
@@ -146,7 +146,7 @@ export async function runOne(o: RunOneOptions): Promise<RunOneResult> {
 		// this one the JVM is spawned after the run was told to stop.
 		if (signal?.aborted) return result(false, "cancelled");
 
-		const tracker = new DeriveTracker();
+		const tracker = new IntrospectTracker();
 		lastTracker = tracker;
 		const outcome = await runAttempt(o, attempt, tracker, clock);
 
@@ -155,7 +155,7 @@ export async function runOne(o: RunOneOptions): Promise<RunOneResult> {
 		// Collect the three files mafia should have written.
 		const collected = await collect(o);
 		copied = collected.copied;
-		const complete = copied > 0 && isDeriveComplete(tracker, tolerance);
+		const complete = copied > 0 && isIntrospectComplete(tracker, tolerance);
 		emit({ type: "perm:collected", user: p.user, copied, complete });
 
 		if (copied === 3 && complete) {
@@ -166,7 +166,7 @@ export async function runOne(o: RunOneOptions): Promise<RunOneResult> {
 
 		let transient = outcome === "transient" || tracker.sawTransient;
 
-		// Files present but the items derive bailed early means partial data. Discard
+		// Files present but the items introspect bailed early means partial data. Discard
 		// the copies so a later RESUME cannot adopt exactly the truncated file the
 		// completeness guard exists to reject, and treat it as retryable, bails are
 		// load-induced and often succeed on a quieter retry.
@@ -253,7 +253,7 @@ type AttemptOutcome =
 async function runAttempt(
 	o: RunOneOptions,
 	attempt: number,
-	tracker: DeriveTracker,
+	tracker: IntrospectTracker,
 	clock: Clock,
 ): Promise<AttemptOutcome> {
 	const { permutation: p, emit, signal } = o;
@@ -355,7 +355,7 @@ async function runAttempt(
 				break;
 			case "transient":
 				emit({ type: "perm:transient", user: p.user, marker: parsed.marker });
-				// Transients count ONLY before deriving starts. Once it is under way they
+				// Transients count ONLY before introspecting starts. Once it is under way they
 				// are noise, and the completeness guard catches any real fallout.
 				if (!tracker.started) finish("transient");
 				break;
@@ -397,8 +397,8 @@ async function runAttempt(
 	// --- Watchdogs ------------------------------------------------------------
 	const timers: NodeJS.Timeout[] = [];
 
-	// Armed AT SPAWN, not at derive start: login can itself wedge, and a timeout
-	// that only starts counting once deriving begins would never fire for that.
+	// Armed AT SPAWN, not at introspect start: login can itself wedge, and a timeout
+	// that only starts counting once introspecting begins would never fire for that.
 	timers.push(
 		setTimeout(() => {
 			emit({
@@ -517,7 +517,7 @@ async function seedWorkdir(o: RunOneOptions): Promise<void> {
 
 	// LOAD-BEARING: start with a clean data dir. If the template's data/ leaked in,
 	// mafia would find an existing TCRS_<Class>_<Sign>.txt from the warm-up or
-	// another permutation and SKIP DERIVING ENTIRELY, producing a wrong-but-plausible
+	// another permutation and SKIP INTROSPECTING ENTIRELY, producing a wrong-but-plausible
 	// output file.
 	await rm(join(o.workDir, "data"), { recursive: true, force: true });
 }
@@ -578,7 +578,7 @@ async function findOutput(
 	return null;
 }
 
-/** Remove this permutation's published files after an incomplete derive. */
+/** Remove this permutation's published files after an incomplete introspect. */
 async function discard(o: RunOneOptions): Promise<void> {
 	for (const name of o.permutation.files) {
 		await unlink(join(o.outputDir, name)).catch(() => {});

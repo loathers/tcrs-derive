@@ -157,7 +157,7 @@ describe("the per-run KoLmafia check", () => {
 	}, 60_000);
 
 	it("warns and carries on when the check fails", async () => {
-		// GitHub being unreachable must not cost a derive.
+		// GitHub being unreachable must not cost a run.
 		const warnings: string[] = [];
 		const handle = startBatch(
 			config(tmp(), {
@@ -177,7 +177,7 @@ describe("the per-run KoLmafia check", () => {
 		expect(result.ok).toBe(1);
 	}, 60_000);
 
-	it("is skipped entirely when there is nothing to derive", async () => {
+	it("is skipped entirely when there is nothing to introspect", async () => {
 		// Nothing to run means nothing to upgrade for, so do not spend the request.
 		let called = 0;
 		const handle = startBatch(
@@ -428,7 +428,7 @@ describe("RESUME", () => {
 		expect(handle.state.summary.done).toBe(1);
 	}, 60_000);
 
-	it("does NOT skip a permutation whose recorded derive was incomplete", async () => {
+	it("does NOT skip a permutation whose recorded introspect was incomplete", async () => {
 		// Trusting file existence and nonzero size would re-adopt exactly the
 		// truncated output the completeness guard exists to reject.
 		const data = tmp();
@@ -446,7 +446,7 @@ describe("RESUME", () => {
 			results: [
 				{
 					user: "at_blender",
-					ok: false, // <- the derive bailed
+					ok: false, // <- the introspect bailed
 					attempts: 3,
 					filesCopied: 3,
 					durationMs: 1,

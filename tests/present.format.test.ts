@@ -55,7 +55,7 @@ describe("makeBar", () => {
 });
 
 describe("percentFor", () => {
-	it("caps at 99 for a real completed derive", () => {
+	it("caps at 99 for a real completed introspect", () => {
 		// mafia announces every 100 items and 12070 isn't a multiple of 100, so the
 		// last line is always 12001/12070. Rounding up would be a worse lie.
 		expect(percentFor({ done: 12001, total: 12070 })).toBe(99);
@@ -81,18 +81,22 @@ describe("row status strings", () => {
 		["skipped", { kind: "skipped", reason: "resume" }, "skipped"],
 		[
 			"items 0%",
-			{ kind: "deriving", phase: "items", progress: null },
+			{ kind: "introspecting", phase: "items", progress: null },
 			"  0% items",
 		],
 		[
 			"items 18%",
-			{ kind: "deriving", phase: "items", progress: { done: 18, total: 100 } },
+			{
+				kind: "introspecting",
+				phase: "items",
+				progress: { done: 18, total: 100 },
+			},
 			" 18% items",
 		],
 		[
 			"items 99%",
 			{
-				kind: "deriving",
+				kind: "introspecting",
 				phase: "items",
 				progress: { done: 12001, total: 12070 },
 			},
@@ -100,12 +104,12 @@ describe("row status strings", () => {
 		],
 		[
 			"cafe booze",
-			{ kind: "deriving", phase: "cafe_booze", progress: null },
+			{ kind: "introspecting", phase: "cafe_booze", progress: null },
 			"cafe booze",
 		],
 		[
 			"cafe food",
-			{ kind: "deriving", phase: "cafe_food", progress: null },
+			{ kind: "introspecting", phase: "cafe_food", progress: null },
 			"cafe food",
 		],
 		[
@@ -122,7 +126,7 @@ describe("row status strings", () => {
 	it("appends the try suffix from attempt 2 onwards", () => {
 		// Only shown once the attempt number exceeds 1.
 		const items: PermStatus = {
-			kind: "deriving",
+			kind: "introspecting",
 			phase: "items",
 			progress: { done: 12, total: 100 },
 		};
@@ -136,7 +140,7 @@ describe("row status strings", () => {
 		expect(
 			rowView(
 				perm(
-					{ kind: "deriving", phase: "cafe_food", progress: null },
+					{ kind: "introspecting", phase: "cafe_food", progress: null },
 					{
 						attempt: 2,
 					},
@@ -197,11 +201,11 @@ describe("summaryLine", () => {
 });
 
 describe("cellLabel", () => {
-	it("shows a percentage while deriving items", () => {
+	it("shows a percentage while introspecting items", () => {
 		expect(
 			cellLabel(
 				perm({
-					kind: "deriving",
+					kind: "introspecting",
 					phase: "items",
 					progress: { done: 4530, total: 12076 },
 				}),
@@ -211,18 +215,22 @@ describe("cellLabel", () => {
 
 	it("shows 0% before the first progress line, not a full bar", () => {
 		expect(
-			cellLabel(perm({ kind: "deriving", phase: "items", progress: null })),
+			cellLabel(
+				perm({ kind: "introspecting", phase: "items", progress: null }),
+			),
 		).toBe("0%");
 	});
 
 	it("shows near-complete for the cafe phases, which report no progress", () => {
 		expect(
 			cellLabel(
-				perm({ kind: "deriving", phase: "cafe_booze", progress: null }),
+				perm({ kind: "introspecting", phase: "cafe_booze", progress: null }),
 			),
 		).toBe("99%");
 		expect(
-			cellLabel(perm({ kind: "deriving", phase: "cafe_food", progress: null })),
+			cellLabel(
+				perm({ kind: "introspecting", phase: "cafe_food", progress: null }),
+			),
 		).toBe("99%");
 	});
 
@@ -249,7 +257,7 @@ describe("cellLabel", () => {
 		for (const status of [
 			{ kind: "queued" } as const,
 			{ kind: "done" } as const,
-			{ kind: "deriving", phase: "items", progress: null } as const,
+			{ kind: "introspecting", phase: "items", progress: null } as const,
 		]) {
 			expect(cellLabel(perm(status))).not.toContain("Wal");
 		}

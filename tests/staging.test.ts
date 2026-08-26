@@ -222,7 +222,7 @@ describe("carryForward", () => {
 		);
 
 		expect(carried).toHaveLength(1);
-		// sourceRunId still points at the run that actually derived it, so the UI can
+		// sourceRunId still points at the run that actually produced it, so the UI can
 		// mark the row stale.
 		expect(present(carried[0]).sourceRunId).toBe("run-1");
 		expect(readFileSync(join(next.dataDir, AT.files[0]), "utf8")).toBe(
@@ -344,7 +344,7 @@ describe("publishRun", () => {
 	});
 
 	/*
-	 * run-1 derives both permutations. run-2 is `--only at_blender`: it re-derives
+	 * run-1 introspects both permutations. run-2 is `--only at_blender`: it redoes
 	 * AT and never touches SC. Both tests below assert on what run-2 published, so
 	 * they share the setup and differ only in what they look at.
 	 */
@@ -397,7 +397,7 @@ describe("publishRun", () => {
 	it("carries the results of the permutations it carried files for", async () => {
 		// resumableUsers joins entries against results, so carrying a permutation's
 		// files without its result would silently make it un-resumable and it would be
-		// re-derived from scratch on the next --resume.
+		// re-introspected from scratch on the next --resume.
 		const published = await partialRerun(tmp());
 
 		expect(published.results.map((r) => r.user).sort()).toEqual(

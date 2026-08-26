@@ -1,5 +1,5 @@
 /**
- * `tcrs run`, derive locally.
+ * `tcrs run`, introspect locally.
  *
  * Chooses between the ink chart and plain line output by testing stdout, which is
  * where human-readable output goes.

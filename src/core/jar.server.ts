@@ -199,7 +199,7 @@ export interface JarUpdate {
  * or the latest release is already the one in use.
  *
  * THROWS on a failed check, and the caller is expected to carry on with the jar it
- * already has. GitHub being unreachable is not a reason to abandon a derive.
+ * already has. GitHub being unreachable is not a reason to abandon a run.
  */
 export async function updateJar(o: {
 	/** Path to the jar in use. Its sidecar says which release it came from. */
@@ -210,7 +210,7 @@ export async function updateJar(o: {
 	pinnedTag?: string | undefined;
 	onProgress?: ((message: string) => void) | undefined;
 }): Promise<JarUpdate | null> {
-	// A pin is a deliberate choice about which build derives the dataset. Upgrading
+	// A pin is a deliberate choice about which build produces the dataset. Upgrading
 	// past it would make MAFIA_TAG mean nothing.
 	if (o.pinnedTag !== undefined && o.pinnedTag !== "") return null;
 
@@ -248,7 +248,7 @@ export interface TcrsCommandProbe {
 	command: TcrsCommand;
 	/**
 	 * False when neither marker was found, which means the jar reorganised again and
-	 * `command` is a guess. Worth surfacing rather than silently deriving.
+	 * `command` is a guess. Worth surfacing rather than silently introspecting.
 	 */
 	recognised: boolean;
 }

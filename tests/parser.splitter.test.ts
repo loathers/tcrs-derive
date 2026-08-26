@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { classifyLine, DeriveTracker, LineSplitter } from "#core/parser";
+import { classifyLine, IntrospectTracker, LineSplitter } from "#core/parser";
 
 const HAPPY = readFileSync("tests/fixtures/logs/happy.log", "utf8");
 
@@ -121,7 +121,7 @@ describe("the TCRS output path", () => {
 	});
 
 	it("records the basename in filesWritten regardless of layout", () => {
-		const t = new DeriveTracker();
+		const t = new IntrospectTracker();
 		t.accept("Wrote file TCRS/TCRS_Sauceror_Vole.txt");
 		t.accept("Wrote file TCRS_Sauceror_Vole_cafe_booze.txt");
 		expect(t.wrote).toEqual([
@@ -162,7 +162,7 @@ describe("classifyLine edge cases", () => {
 	});
 
 	it("records the build from a real log", () => {
-		const t = new DeriveTracker();
+		const t = new IntrospectTracker();
 		for (const l of HAPPY.split("\n")) t.accept(l);
 		expect(t.build).toBe("r29131-M");
 	});

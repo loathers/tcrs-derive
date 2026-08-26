@@ -17,7 +17,7 @@ import { present } from "../helpers/present.ts";
 /**
  * Everything runOne does that a unit test cannot reach: real spawn/pipe plumbing,
  * the 'close'-vs-'exit' race, both watchdogs, process-group killing, the collect
- * size rule, discard-partials, retry backoff, and abort mid-derive.
+ * size rule, discard-partials, retry backoff, and abort mid-run.
  *
  * No JVM, no network, no KoL account, fake-java.mjs replays a committed fixture.
  */
@@ -88,7 +88,7 @@ function harness(
 }
 
 describe("the happy path", () => {
-	it("derives, collects 3 files and reports done", async () => {
+	it("introspects, collects 3 files and reports done", async () => {
 		const h = harness();
 		const r = await runOne(h.opts);
 
@@ -171,7 +171,7 @@ describe("the happy path", () => {
 });
 
 describe("partial output is discarded, not published", () => {
-	it("rejects a derive that bailed early despite writing 3 files", async () => {
+	it("rejects an introspect that bailed early despite writing 3 files", async () => {
 		// mafia prints Done! and saves truncated files. File existence alone would
 		// accept this. The completeness guard must not.
 		const h = harness(["--fake-fixture=partial-bail"], { maxAttempts: 1 });
@@ -251,7 +251,7 @@ describe("watchdogs", () => {
 		expect(r.reason).toBe("login");
 	}, 30_000);
 
-	it("does not fire the login watchdog once deriving has started", async () => {
+	it("does not fire the login watchdog once introspecting has started", async () => {
 		// The fixture reaches the items phase quickly, then idles.
 		const h = harness(["--fake-stop-after=45"], {
 			loginTimeoutMs: 300,
@@ -264,7 +264,7 @@ describe("watchdogs", () => {
 		expect(r.reason).toBe("timeout");
 	}, 30_000);
 
-	it("enforces the overall timeout from spawn, not from derive start", async () => {
+	it("enforces the overall timeout from spawn, not from introspect start", async () => {
 		const h = harness(["--fake-stop-after=45"], {
 			loginTimeoutMs: 60_000,
 			timeoutMs: 500,
@@ -325,7 +325,7 @@ describe("watchdogs", () => {
 });
 
 describe("cancellation", () => {
-	it("aborts mid-derive without retrying", async () => {
+	it("aborts mid-run without retrying", async () => {
 		const controller = new AbortController();
 		const h = harness(["--fake-delay=5"], {
 			signal: controller.signal,
@@ -423,7 +423,7 @@ describe("failure classification", () => {
 		const r = await runOne(h.opts);
 
 		// Attempt 1 wrote partial output and had it discarded; attempt 2 replayed
-		// `username: Invalid login.` and never started deriving.
+		// `username: Invalid login.` and never started introspecting.
 		expect(h.find("perm:attempt")).toHaveLength(2);
 		expect(h.find("perm:discarded")).toHaveLength(1);
 		expect(r.ok).toBe(false);
@@ -434,9 +434,9 @@ describe("failure classification", () => {
 });
 
 describe("work dir seeding", () => {
-	it("deletes a template's data/ so mafia cannot skip deriving", async () => {
+	it("deletes a template's data/ so mafia cannot skip introspecting", async () => {
 		// LOAD-BEARING: a leaked TCRS file makes mafia find existing data and skip
-		// the derive, producing a wrong-but-plausible output file.
+		// the introspect, producing a wrong-but-plausible output file.
 		const template = tmp();
 		mkdirSync(join(template, "data"), { recursive: true });
 		writeFileSync(

@@ -17,8 +17,8 @@
 export type Phase = "items" | "cafe_booze" | "cafe_food";
 
 export type FailureReason =
-	| "login" // never got as far as deriving
-	| "incomplete" // derive bailed early, partial output discarded
+	| "login" // never got as far as introspecting
+	| "incomplete" // introspect bailed early, partial output discarded
 	| "timeout" // hit the overall per-permutation TIMEOUT
 	| "stalled" // no progress for stallTimeout
 	| "not-in-tcrs" // account is not in a TCRS run, so never retried

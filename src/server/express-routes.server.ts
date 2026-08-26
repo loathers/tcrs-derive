@@ -57,7 +57,7 @@ export function mountApiRoutes(app: Express): void {
 	app.get(`${FILE_URL_BASE}/:name`, fileHandler(dataDir));
 	app.get("/api/logs/:user", logHandler(dataDir));
 
-	// Cheap, and deliberately still 200 DURING a run: a 7.5-minute derive is not
+	// Cheap, and deliberately still 200 DURING a run: a 7.5-minute run is not
 	// unhealthy, and a healthcheck that fails mid-run would make Coolify restart the
 	// container and kill the batch.
 	app.get("/healthz", (_req, res) => {

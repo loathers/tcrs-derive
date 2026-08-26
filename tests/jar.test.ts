@@ -93,7 +93,7 @@ describe("jar resolution is always absolute", () => {
 
 /**
  * The per-run version check. Releases only land between runs, so a run is the
- * natural moment to look, but the check must never be able to cost us a derive.
+ * natural moment to look, but the check must never be able to cost us a run.
  */
 describe("checking for a newer KoLmafia", () => {
 	/** Route the release API and the asset download to canned responses. */

@@ -23,14 +23,14 @@ export type PermStatus =
 	| { readonly kind: "login" }
 	| { readonly kind: "stalled" }
 	| {
-			readonly kind: "deriving";
+			readonly kind: "introspecting";
 			readonly phase: Phase;
 			/**
 			 * null during the cafe phases, because mafia emits no Progress: lines for
 			 * them. Keeping the reducer honest here is what makes it STRUCTURALLY
 			 * IMPOSSIBLE for a view to render a stale items percentage during a cafe
 			 * phase. Special-casing it in each renderer instead would mean every view
-			 * re-deriving the same rule. See present.ts, where it lives exactly once.
+			 * re-introspecting the same rule. See present.ts, where it lives exactly once.
 			 */
 			readonly progress: Progress | null;
 	  }
@@ -158,12 +158,12 @@ function recount(
 			case "skipped":
 				skipped++;
 				break;
-			// login / stalled / deriving / retrying all count as in-flight. `retrying`
+			// login / stalled / introspecting / retrying all count as in-flight. `retrying`
 			// is an explicit status rather than a permutation left displaying its
 			// previous phase for the length of the backoff.
 			case "login":
 			case "stalled":
-			case "deriving":
+			case "introspecting":
 			case "retrying":
 				running++;
 				break;
@@ -249,23 +249,23 @@ function apply(state: RunState, event: RunEvent): RunState {
 			// progress starts null on every phase change. Only the items phase will
 			// ever fill it in.
 			return patch(state, event.user, () => ({
-				status: { kind: "deriving", phase: event.phase, progress: null },
+				status: { kind: "introspecting", phase: event.phase, progress: null },
 			}));
 
 		case "perm:progress":
 			if (isSettled(state.perms[event.user]?.status)) return state;
 			return patch(state, event.user, (p) => ({
 				status: {
-					kind: "deriving",
+					kind: "introspecting",
 					// A progress line before any phase header belongs to items, that is
 					// the only phase that reports.
-					phase: p.status.kind === "deriving" ? p.status.phase : "items",
+					phase: p.status.kind === "introspecting" ? p.status.phase : "items",
 					progress: { done: event.done, total: event.total },
 				},
 			}));
 
 		case "perm:transient":
-			// A transient marker means `stalled` only before deriving starts. Once a
+			// A transient marker means `stalled` only before introspecting starts. Once a
 			// phase is running they are noise, and the completeness guard handles any
 			// real fallout.
 			return patch(state, event.user, (p) => ({
@@ -339,7 +339,7 @@ const SETTLED: ReadonlySet<PermStatus["kind"]> = new Set([
  *
  * kill() gives the JVM a 3s TERM grace and stdout is drained throughout it, so a
  * `Progress:` or phase header can arrive AFTER the row has already timed out or
- * finished. Without this those late lines put the row back to `deriving 87% items`
+ * finished. Without this those late lines put the row back to `introspecting 87% items`
  * and it counts as running again until perm:failed lands. perm:attempt is the
  * legitimate way back out, and sets `login` itself.
  */

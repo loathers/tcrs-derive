@@ -162,7 +162,7 @@ describe("retries", () => {
 		}
 	});
 
-	it("shows stalled only before deriving starts", () => {
+	it("shows stalled only before introspecting starts", () => {
 		const before = reduceAll(
 			freshState(),
 			stamp([
@@ -181,7 +181,7 @@ describe("retries", () => {
 		);
 		expect(present(before.perms.tt_wallaby).status.kind).toBe("stalled");
 
-		// Once deriving is under way a transient is noise, and the completeness
+		// Once introspecting is under way a transient is noise, and the completeness
 		// guard handles the rest.
 		const after = reduceAll(
 			freshState(),
@@ -200,7 +200,7 @@ describe("retries", () => {
 				},
 			]),
 		);
-		expect(present(after.perms.tt_wallaby).status.kind).toBe("deriving");
+		expect(present(after.perms.tt_wallaby).status.kind).toBe("introspecting");
 		expect(present(after.perms.tt_wallaby).sawTransient).toBe(true);
 	});
 
@@ -278,13 +278,13 @@ describe("run lifecycle", () => {
 
 describe("late output from a killed JVM", () => {
 	/**
-	 * REGRESSION: perm:progress and perm:phase set `deriving` unconditionally. kill()
+	 * REGRESSION: perm:progress and perm:phase set `introspecting` unconditionally. kill()
 	 * gives the JVM a 3s TERM grace and stdout is still being drained through it, so
 	 * any Progress: or phase header in that tail flipped a row that had already
-	 * timed out back to `deriving 87% items` -- and it was counted as running again
+	 * timed out back to `introspecting 87% items` -- and it was counted as running again
 	 * until perm:failed finally landed.
 	 */
-	it("does not let a stalled row go back to deriving", () => {
+	it("does not let a stalled row go back to introspecting", () => {
 		const s = reduceAll(
 			freshState(["tt_wallaby"]),
 			stamp([
@@ -319,7 +319,7 @@ describe("late output from a killed JVM", () => {
 		expect(present(s.perms.tt_wallaby).status.kind).toBe("stalled");
 	});
 
-	it("does not let a finished row go back to deriving", () => {
+	it("does not let a finished row go back to introspecting", () => {
 		const s = reduceAll(
 			freshState(["tt_wallaby"]),
 			stamp([
@@ -360,7 +360,7 @@ describe("late output from a killed JVM", () => {
 		);
 
 		const status = present(s.perms.tt_wallaby).status;
-		expect(status.kind).toBe("deriving");
-		expect(status.kind === "deriving" && status.progress?.done).toBe(42);
+		expect(status.kind).toBe("introspecting");
+		expect(status.kind === "introspecting" && status.progress?.done).toBe(42);
 	});
 });

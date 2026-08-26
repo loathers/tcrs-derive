@@ -1,11 +1,11 @@
 # tcrs-derive
 
-Batch-derives KoLmafia's Two Crazy Random Summer (TCRS) item-modifier data for every
-class × sign permutation, and serves the results from a small website.
+Batch-introspects KoLmafia's Two Crazy Random Summer (TCRS) item-modifier data for
+every class × sign permutation, and serves the results from a small website.
 
 There are 54 dedicated KoL accounts, one per permutation, named `<classAbbr>_<sign>`
 (e.g. `tt_wallaby`), each already inside an active TCRS run as the matching class and
-sign. For each one the tool logs in, derives, and collects the three files KoLmafia
+sign. For each one the tool logs in, introspects, and collects the three files KoLmafia
 writes. That is 162 files and about 50 MB. A full run takes roughly 8 minutes.
 
 ## Requirements
@@ -50,10 +50,10 @@ Every variable below is also a CLI flag. Run `yarn tcrs run --help` for the full
 | `PASSWORD_<CLASS>_<SIGN>` | (required) | Password for one account, e.g. `PASSWORD_TT_WALLABY`. |
 | `CONCURRENCY` | `3` | Permutations in parallel. Each is a full JVM and a login from one IP. |
 | `TIMEOUT` | `1800` | Per-account seconds before the JVM is killed. |
-| `LOGIN_TIMEOUT` | `180` | Seconds to wait for deriving to start before treating a login as stuck. |
+| `LOGIN_TIMEOUT` | `180` | Seconds to wait for introspecting to start before treating a login as stuck. |
 | `MAX_ATTEMPTS` | `3` | Login attempts per permutation. |
 | `RETRY_BACKOFF` | `15` | Base seconds between attempts, multiplied by attempt number. |
-| `STALL_TIMEOUT` | (unset) | Kill a derive that reports no progress for this many seconds. |
+| `STALL_TIMEOUT` | (unset) | Kill a run that reports no progress for this many seconds. |
 | `DATA_DIR` | `./data` | Data root (runs, state, scratch). |
 | `JAR` | `./KoLmafia.jar` | KoLmafia jar. |
 | `JAVA_OPTS` | (unset) | Extra JVM flags, e.g. `-Xmx512m`. |

@@ -12,10 +12,10 @@ import { attachCommand } from "./commands/attach.tsx";
 import { listCommand } from "./commands/list.ts";
 import { runCommand } from "./commands/run.ts";
 
-const HELP = `tcrs, batch-derive KoLmafia TCRS data for every class x sign permutation
+const HELP = `tcrs, batch-introspect KoLmafia TCRS data for every class x sign permutation
 
 Usage:
-  tcrs run [options]        derive locally, with a live progress chart
+  tcrs run [options]        introspect locally, with a live progress chart
   tcrs attach [options]     watch a run happening on the server
   tcrs list [options]       list the 54 permutations
   tcrs serve                start the web server (see: yarn start)
@@ -28,10 +28,10 @@ Run options:
   --jar PATH                KoLmafia jar (default: $JAR, else ./KoLmafia*.jar)
   --data-dir DIR            data root (default ./data)
   --timeout S               per-permutation seconds before the JVM is killed
-  --login-timeout S         seconds to wait for deriving to start
+  --login-timeout S         seconds to wait for introspecting to start
   --max-attempts N          login attempts per permutation
   --retry-backoff S         base seconds between attempts
-  --stall-timeout S         kill a derive that reports no progress for S seconds
+  --stall-timeout S         kill a run that reports no progress for S seconds
   --skip-warmup             do not populate the shared data template
   --keep-workdirs           keep per-JVM work dirs for forensics
   --promote MODE            success | always | never (default success)

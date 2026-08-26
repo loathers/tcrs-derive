@@ -30,7 +30,7 @@ export function freshState(
 	});
 }
 
-/** The event sequence a permutation emits on a clean, successful derive. */
+/** The event sequence a permutation emits on a clean, successful introspect. */
 export function happyPath(user: string): RunEventInit[] {
 	return [
 		{ type: "perm:attempt", user, attempt: 1, maxAttempts: 3 },

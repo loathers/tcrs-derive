@@ -71,7 +71,7 @@ export function progressPercent(p: PermState): number {
 		case "stalled":
 		case "retrying":
 			return 0;
-		case "deriving":
+		case "introspecting":
 			// The cafe phases report nothing and are the last sliver of the work, so
 			// they sit at the same near-complete number the items phase caps at.
 			if (s.phase !== "items") return CAFE_PERCENT;
@@ -120,7 +120,7 @@ export function rowView(p: PermState): RowView {
 		case "skipped":
 			return row(p, 100, FILL_EMPTY, "skipped", "idle");
 
-		case "deriving": {
+		case "introspecting": {
 			if (s.phase !== "items") {
 				// A full bar labelled with the phase: mafia emits no Progress: lines for
 				// the cafe phases, so there is no percentage to show. The web cell shows a
@@ -198,7 +198,7 @@ export function cellLabel(p: PermState): string {
 			return "stall";
 		case "login":
 			return "0%";
-		case "deriving":
+		case "introspecting":
 			return `${progressPercent(p)}%`;
 	}
 }

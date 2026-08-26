@@ -9,7 +9,7 @@ import type { BatchConfig } from "./runBatch.server.ts";
 export const DEFAULTS = {
 	/**
 	 * Deliberately conservative. In a container a memory limit is a HARD ceiling
-	 * where a VPS's RAM is soft, and an OOM-killed JVM mid-derive costs a whole
+	 * where a VPS's RAM is soft, and an OOM-killed JVM mid-run costs a whole
 	 * permutation, so default low and let the operator raise it after watching real
 	 * RSS. The other constraint is KoL's: 54 logins from one IP.
 	 */
