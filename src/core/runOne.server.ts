@@ -56,10 +56,22 @@ export class AbortedError extends Error {
 	}
 }
 
+/**
+ * Which mafia command derives the data.
+ *
+ * `derive` is the only one r29189 and earlier have. Later builds add `introspect`,
+ * which does what `derive` used to, while `derive` narrows to "introspect only the
+ * items missing from items.txt". They are NOT interchangeable, and sending
+ * `introspect` to a jar that predates it fails the run.
+ */
+export type TcrsCommand = "derive" | "introspect";
+
 export interface RunOneOptions {
 	permutation: Permutation;
 	password: string;
 	jarPath: string;
+	/** Defaults to `derive`, the one every jar has. */
+	tcrsCommand?: TcrsCommand | undefined;
 	javaBin: string;
 	/** Extra JVM flags, prepended. Production: -Xmx512m -XX:+UseSerialGC. Tests use
 	 *  it to configure fake-java, since the child env is deliberately minimal. */
@@ -291,7 +303,7 @@ async function runAttempt(
 		"no",
 		"no",
 		"tcrs reset",
-		"tcrs derive",
+		`tcrs ${o.tcrsCommand ?? "derive"}`,
 		"tcrs save",
 		"exit",
 	].join("\n");

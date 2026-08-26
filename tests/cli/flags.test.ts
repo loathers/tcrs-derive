@@ -32,6 +32,23 @@ describe("numeric flag validation", () => {
 		);
 	});
 
+	it("rejects a tcrs command that is neither of the two", () => {
+		// Defaulting on a typo would silently derive after being asked to
+		// introspect, and the difference is a whole dataset.
+		expect(() =>
+			buildConfig({ "tcrs-command": "intraspect" } as CliFlags),
+		).toThrow(InvalidFlagError);
+	});
+
+	it("accepts both tcrs commands", () => {
+		expect(
+			buildConfig({ "tcrs-command": "derive" } as CliFlags).tcrsCommand,
+		).toBe("derive");
+		expect(
+			buildConfig({ "tcrs-command": "introspect" } as CliFlags).tcrsCommand,
+		).toBe("introspect");
+	});
+
 	it("accepts positive numbers and converts seconds to ms", () => {
 		const cfg = buildConfig({
 			concurrency: "3",

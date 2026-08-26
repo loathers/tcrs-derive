@@ -375,6 +375,32 @@ describe("cancellation", () => {
 	}, 30_000);
 });
 
+describe("the tcrs command", () => {
+	it("sends `tcrs derive` by default, which every jar has", async () => {
+		const h = harness([], { keepWorkdir: true });
+		await runOne(h.opts);
+		const sent = readFileSync(
+			join(h.workDir, "stdin-received.txt"),
+			"utf8",
+		).split("\n");
+		expect(sent).toContain("tcrs derive");
+		expect(sent).not.toContain("tcrs introspect");
+	}, 30_000);
+
+	it("sends `tcrs introspect` when asked for it", async () => {
+		// r29192 and later. Sending it to an older jar is an unknown command, which
+		// is why this is opt-in rather than the default.
+		const h = harness([], { keepWorkdir: true, tcrsCommand: "introspect" });
+		await runOne(h.opts);
+		const sent = readFileSync(
+			join(h.workDir, "stdin-received.txt"),
+			"utf8",
+		).split("\n");
+		expect(sent).toContain("tcrs introspect");
+		expect(sent).not.toContain("tcrs derive");
+	}, 30_000);
+});
+
 describe("failure classification", () => {
 	/**
 	 * REGRESSION: `reason` was declared outside the retry loop and the final

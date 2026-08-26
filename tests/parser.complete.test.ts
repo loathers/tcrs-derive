@@ -2,9 +2,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
 	COMPLETE_TOLERANCE,
+	classifyLine,
 	DeriveTracker,
 	isDeriveComplete,
 	LineSplitter,
+	STARTED_RE,
 } from "#core/parser";
 
 function replay(fixture: string): DeriveTracker {
@@ -116,5 +118,34 @@ describe("progress is scoped to the items phase", () => {
 		const t = new DeriveTracker();
 		t.accept("Deriving TCRS item adjustments for all cafe booze items...");
 		expect(t.started).toBe(false);
+	});
+});
+
+describe("the introspect rename", () => {
+	/**
+	 * r29189 and earlier print "Deriving". Later builds print "Introspecting" for
+	 * the same three phases, and keep a "Deriving" line for the narrower
+	 * `tcrs derive`. One parser has to read whichever jar a run picked up.
+	 */
+	it.each([
+		["Deriving", "real", "items"],
+		["Introspecting", "real", "items"],
+		["Deriving", "cafe booze", "cafe_booze"],
+		["Introspecting", "cafe booze", "cafe_booze"],
+		["Deriving", "cafe food", "cafe_food"],
+		["Introspecting", "cafe food", "cafe_food"],
+	])("reads %s ... %s items as the %s phase", (verb, label, phase) => {
+		const line = `${verb} TCRS item adjustments for all ${label} items...`;
+		expect(classifyLine(line)).toEqual({ kind: "phase", phase });
+	});
+
+	it("treats either verb as the derive having started", () => {
+		// STARTED_RE disarms the login watchdog. Missing the new wording would kill
+		// every permutation at LOGIN_TIMEOUT despite the derive running fine.
+		for (const verb of ["Deriving", "Introspecting"]) {
+			expect(
+				STARTED_RE.test(`${verb} TCRS item adjustments for all real items...`),
+			).toBe(true);
+		}
 	});
 });

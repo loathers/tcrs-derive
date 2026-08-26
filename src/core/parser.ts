@@ -39,11 +39,14 @@ export const TRANSIENT_RE =
  * case-sensitively: the capitalisation is mafia's own and is stable.
  */
 export const STARTED_RE =
-	/Deriving TCRS item adjustments for all real items|Progress: /;
+	/(?:Deriving|Introspecting) TCRS item adjustments for all real items|Progress: /;
 
 /** Phase headers. Only the `real items` phase emits Progress: lines. */
+// r29189 and earlier say "Deriving". Later builds say "Introspecting" for the same
+// three phases, and keep a "Deriving" line for the narrower `tcrs derive`. Matching
+// both means one parser works whichever jar a run happens to pick up.
 const PHASE_RE =
-	/Deriving TCRS item adjustments for all (real|cafe booze|cafe food) items/;
+	/(?:Deriving|Introspecting) TCRS item adjustments for all (real|cafe booze|cafe food) items/;
 
 /** `Progress: 4001/12070` */
 const PROGRESS_RE = /Progress: (\d+)\/(\d+)/;

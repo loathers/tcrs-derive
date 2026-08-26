@@ -56,6 +56,7 @@ Every variable below is also a CLI flag. Run `yarn tcrs run --help` for the full
 | `STALL_TIMEOUT` | (unset) | Kill a derive that reports no progress for this many seconds. |
 | `DATA_DIR` | `./data` | Data root (runs, state, scratch). |
 | `JAR` | `./KoLmafia.jar` | KoLmafia jar. |
+| `TCRS_COMMAND` | `derive` | `derive` or `introspect`. r29189 and earlier only have `derive`. |
 | `JAVA_OPTS` | (unset) | Extra JVM flags, e.g. `-Xmx512m`. |
 | `ONLY` / `EXCLUDE` | (unset) | Comma-separated permutation filters. |
 | `RESUME` | (unset) | `1` to skip permutations the published manifest records as complete. |

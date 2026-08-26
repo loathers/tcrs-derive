@@ -17,7 +17,11 @@ import {
 	selectPermutations,
 } from "./permutations.ts";
 import { track, untrack } from "./reaper.server.ts";
-import { type RunOneResult, runOne } from "./runOne.server.ts";
+import {
+	type RunOneResult,
+	runOne,
+	type TcrsCommand,
+} from "./runOne.server.ts";
 import {
 	createStaging,
 	indexFiles,
@@ -33,6 +37,8 @@ import { warmUp } from "./warmup.server.ts";
 
 export interface BatchConfig {
 	jarPath: string;
+	/** Which mafia command derives the data. Defaults to `derive`. */
+	tcrsCommand?: TcrsCommand | undefined;
 	/**
 	 * Optional per-run check for a newer KoLmafia, awaited before the warm-up.
 	 * Returns the jar to use, or null to keep the current one.
@@ -275,6 +281,7 @@ async function execute(
 				permutation: p,
 				password: secrets.passwordFor(p),
 				jarPath,
+				...(cfg.tcrsCommand ? { tcrsCommand: cfg.tcrsCommand } : {}),
 				javaBin: cfg.javaBin,
 				...(cfg.javaOpts ? { javaOpts: cfg.javaOpts } : {}),
 				workDir: join(cfg.dataDir, "work", p.user),
