@@ -58,9 +58,9 @@ cp .env.example .env
 yarn tcrs list --check-env
 ```
 
-Unlike the old shell version you do **not** export these into your shell. They are
-read into memory and deliberately removed from `process.env`, and each JVM is spawned
-with an explicit minimal environment, see [Security](#security).
+Do **not** export these into your shell. `tcrs` reads `.env` itself, keeps the values
+in memory, deliberately removes them from `process.env`, and spawns each JVM with an
+explicit minimal environment, see [Security](#security).
 
 ## How it works
 
@@ -72,8 +72,8 @@ with an explicit minimal environment, see [Security](#security).
   instead of popping modal Swing dialogs that would block forever.
 - Login and commands go in on stdin: `username`, `password`, `no`, `no`,
   `tcrs reset`, `tcrs derive`, `tcrs save`, `exit`.
-- Progress comes from **reading each child's stdout directly**. The shell version
-  re-derived all state every 1.5 s by `tr | awk | grep`-ing 54 growing log files, about 65,000 processes and 80 MB of re-reading per batch, just to draw bars.
+- Progress comes from **reading each child's stdout directly**, parsed once into events
+  as the lines arrive. Nothing polls or re-reads a log file to draw the chart.
 - A one-time warm-up populates a shared data template so common startup downloads
   aren't repeated 54 times.
 
@@ -169,9 +169,9 @@ emits NDJSON of the raw event stream.
 
 ## Security
 
-The shell version told you to `export $(grep -v '^#' .env | xargs)`. That environment
-was inherited all the way down to every JVM, so `/proc/<jvm-pid>/environ` exposed
-**all 54 passwords** to any process running as the same user. Now:
+Exporting the passwords into your shell would be the obvious way to do this, and it
+leaks: the environment is inherited by every JVM, so `/proc/<jvm-pid>/environ` would
+expose **all 54 passwords** to any process running as the same user. Instead:
 
 1. passwords are read into a `Map` and **deleted from `process.env`** at boot, so no
    later crash dump or error serialiser can spill them;
@@ -234,8 +234,9 @@ between 900 and 9200 items, on all three attempts. Fixed by `r29183`.
 ## Tests
 
 ```sh
-yarn test        # 240+ tests, no JVM, no network, no KoL account
+yarn test        # 300 tests, no JVM, no network, no KoL account
 yarn typecheck
+yarn lint        # biome, formatting and lint together
 ```
 
 The suite runs entirely offline. `tests/fixtures/fake-java.mjs` impersonates the JVM
