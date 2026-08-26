@@ -109,10 +109,19 @@ function lower(s: string): string {
   return s.toLowerCase();
 }
 
+/**
+ * The account name for a permutation. Exported so nothing rebuilds it inline: a
+ * caller that gets it wrong looks up an absent key and silently renders nothing,
+ * which is exactly the failure a shared table exists to prevent.
+ */
+export function userFor(abbr: ClassAbbr, signCap: Sign): string {
+  return `${abbr}_${lower(signCap)}`;
+}
+
 function makePermutation(abbr: ClassAbbr, signCap: Sign): Permutation {
   const classToken = CLASS_TOKENS[abbr];
   const signLower = lower(signCap) as Lowercase<Sign>;
-  const user = `${abbr}_${signLower}`;
+  const user = userFor(abbr, signCap);
   return {
     user,
     abbr,

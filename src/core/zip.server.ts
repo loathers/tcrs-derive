@@ -24,7 +24,7 @@ import {
   sha256File,
   type ManifestEntry,
   type Staging,
-} from "#core/staging.server";
+} from "./staging.server.ts";
 
 export async function buildZip(
   staging: Staging,

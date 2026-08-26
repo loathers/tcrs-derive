@@ -33,7 +33,12 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 import type { FailureReason } from "./events.ts";
-import { ALL_FILE_NAMES, type FileKind } from "./permutations.ts";
+import { buildZip } from "./zip.server.ts";
+import {
+  ALL_FILE_NAMES,
+  permutationForFile,
+  type FileKind,
+} from "./permutations.ts";
 
 export const CURRENT_LINK = "current";
 export const RUNS_DIR = "runs";
@@ -241,7 +246,7 @@ export async function carryForward(
     const src = join(previous.dir, "data", name);
     try {
       await copyFile(src, join(staging.dataDir, name));
-      carried.push({ ...entry, sourceRunId: entry.sourceRunId });
+      carried.push({ ...entry });
     } catch {
       // The previous file is gone. The entry simply stays missing.
     }
@@ -253,11 +258,10 @@ export async function carryForward(
 export async function indexFiles(
   staging: Staging,
   runId: string,
-  lookup: (name: string) => { user: string; kind: FileKind } | undefined,
 ): Promise<ManifestEntry[]> {
   const entries: ManifestEntry[] = [];
   for (const name of ALL_FILE_NAMES) {
-    const meta = lookup(name);
+    const meta = permutationForFile(name);
     if (!meta) continue;
     const path = join(staging.dataDir, name);
     try {
@@ -265,7 +269,7 @@ export async function indexFiles(
       if (!st.isFile() || st.size === 0) continue;
       entries.push({
         name,
-        user: meta.user,
+        user: meta.permutation.user,
         kind: meta.kind,
         bytes: st.size,
         sha256: await sha256File(path),
@@ -317,4 +321,97 @@ export async function clearWork(dataDir: string): Promise<void> {
 /** Remove a stale `current` symlink (used by boot recovery). */
 export async function unlinkCurrent(dataDir: string): Promise<void> {
   await unlink(join(dataDir, CURRENT_LINK)).catch(() => {});
+}
+
+
+export interface PublishInput {
+  staging: Staging;
+  runId: string;
+  /**
+   * The entries the batch itself indexed, BEFORE any carry-forward. Passing them
+   * in rather than re-indexing here is not only cheaper (the dataset is ~50MB and
+   * would otherwise be read and hashed twice per publish): re-indexing after
+   * carryForward re-stamps the carried files with THIS run's id, which erased the
+   * only record that they came from an older one and left stalePermutations
+   * permanently empty.
+   */
+  entries: readonly ManifestEntry[];
+  /** Expected files this run did not produce, to be filled from the last one. */
+  missing: readonly string[];
+  results: PermutationResult[];
+  mafiaBuild: string | null;
+  concurrency: number;
+  startedAt: number;
+  finishedAt: number;
+  outcome: "success" | "partial";
+}
+
+export interface PublishResult {
+  manifest: RunManifest;
+  carried: ManifestEntry[];
+}
+
+/**
+ * Make a staged run the published one.
+ *
+ * The ordering here is the most consequential in the repo and is why this lives in
+ * one place rather than once per caller: gaps are filled first so the published set
+ * is always complete, the checksums and the zip are built INSIDE the staging dir so
+ * they are part of the atomic swap, the manifest is written last, and the previous
+ * run is pruned only after the symlink has flipped.
+ *
+ * Deciding WHETHER to publish stays with the caller: the CLI honours --promote, the
+ * server refuses to regress coverage. That difference is real and belongs at the
+ * call sites.
+ */
+export async function publishRun(
+  dataDir: string,
+  input: PublishInput,
+): Promise<PublishResult> {
+  const previousDir = await resolveCurrent(dataDir);
+  const previousManifest = previousDir ? await readManifest(previousDir) : null;
+
+  const carried =
+    previousDir && previousManifest
+      ? await carryForward(
+          input.staging,
+          { dir: previousDir, manifest: previousManifest },
+          input.missing,
+        )
+      : [];
+
+  // Fresh wins; carried entries keep the sourceRunId of the run that derived them.
+  const byName = new Map(carried.map((e) => [e.name, e]));
+  for (const e of input.entries) byName.set(e.name, e);
+  const entries = [...byName.values()].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+
+  // After the merge, so the checksums cover carried files too.
+  await writeSums(input.staging, entries);
+
+  const zip = await buildZip(input.staging, entries).catch(() => null);
+
+  const manifest: RunManifest = {
+    version: 1,
+    id: input.runId,
+    startedAt: new Date(input.startedAt).toISOString(),
+    finishedAt: new Date(input.finishedAt).toISOString(),
+    outcome: input.outcome,
+    durationMs: input.finishedAt - input.startedAt,
+    concurrency: input.concurrency,
+    mafiaBuild: input.mafiaBuild,
+    results: input.results,
+    entries,
+    zip,
+    totalBytes: entries.reduce((n, e) => n + e.bytes, 0),
+  };
+
+  await writeManifest(input.staging, manifest);
+  await promote(dataDir, input.runId);
+  // Safe to delete the old dir immediately: an in-flight download holds an open
+  // fd, and POSIX keeps that inode alive.
+  await pruneRuns(dataDir, [input.runId]);
+
+  return { manifest, carried };
 }

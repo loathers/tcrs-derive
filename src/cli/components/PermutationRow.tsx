@@ -2,15 +2,8 @@
 import { Box, Text } from "ink";
 import { rowView } from "#core/present";
 import type { PermState } from "#core/state";
+import { TONE_COLOR } from "../tone.ts";
 import { Bar } from "./Bar.tsx";
-
-const TONE_COLOR = {
-  idle: "gray",
-  active: "white",
-  ok: "green",
-  fail: "red",
-  warn: "yellow",
-} as const;
 
 export function PermutationRow({ perm }: { perm: PermState }) {
   const view = rowView(perm);

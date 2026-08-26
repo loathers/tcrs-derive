@@ -1,7 +1,8 @@
+import { memo } from "react";
 import type { FileListResponse } from "../lib/api-types.ts";
 import { ClassSection } from "./ClassSection.tsx";
 
-export function DownloadTable({
+export const DownloadTable = memo(function DownloadTable({
   files,
   stale,
 }: {
@@ -17,4 +18,4 @@ export function DownloadTable({
       ))}
     </div>
   );
-}
+});

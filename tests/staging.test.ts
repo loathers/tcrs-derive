@@ -9,6 +9,7 @@ import {
   indexFiles,
   promote,
   pruneRuns,
+  publishRun,
   readCurrentManifest,
   resolveCurrent,
   runIdFor,
@@ -155,10 +156,7 @@ describe("indexFiles and writeSums", () => {
     writeFileSync(join(staging.dataDir, AT.files[0]), "hello");
     writeFileSync(join(staging.dataDir, AT.files[1]), "");
 
-    const entries = await indexFiles(staging, "run-1", () => ({
-      user: AT.user,
-      kind: "items",
-    }));
+    const entries = await indexFiles(staging, "run-1");
 
     // The zero-byte file must be excluded, matching the collect rule.
     expect(entries.map((e) => e.name)).toEqual([AT.files[0]]);
@@ -173,10 +171,7 @@ describe("indexFiles and writeSums", () => {
     const data = tmp();
     const staging = await createStaging(data, "run-1");
     writeFileSync(join(staging.dataDir, AT.files[0]), "hello");
-    const entries = await indexFiles(staging, "run-1", () => ({
-      user: AT.user,
-      kind: "items",
-    }));
+    const entries = await indexFiles(staging, "run-1");
     await writeSums(staging, entries);
 
     const sums = readFileSync(join(staging.dataDir, "SHA256SUMS.txt"), "utf8");
@@ -244,3 +239,116 @@ async function realish(p: string): Promise<string> {
   await mkdir(p, { recursive: true });
   return realpath(p);
 }
+
+describe("publishRun", () => {
+  const base = {
+    results: [],
+    mafiaBuild: "r29183",
+    concurrency: 3,
+    startedAt: 0,
+    finishedAt: 1000,
+    outcome: "success" as const,
+  };
+
+  it("marks carried-forward files as coming from the earlier run", async () => {
+    // REGRESSION: publish used to re-index the staging dir AFTER carry-forward,
+    // and indexFiles stamps everything it finds with the CURRENT run id. That
+    // erased the only record that a file came from an older run, so
+    // stalePermutations was permanently empty and the "old" badge never showed.
+    const data = tmp();
+
+    const prev = await createStaging(data, "run-1");
+    writeFileSync(join(prev.dataDir, AT.files[0]), "older but valid");
+    const prevEntries = await indexFiles(prev, "run-1");
+    await writeManifest(prev, manifest("run-1", { entries: prevEntries }));
+    await promote(data, "run-1");
+
+    // run-2 produces only the second file, so the first has to be carried.
+    const next = await createStaging(data, "run-2");
+    writeFileSync(join(next.dataDir, AT.files[1]), "fresh");
+    const freshEntries = await indexFiles(next, "run-2");
+
+    const { manifest: published, carried } = await publishRun(data, {
+      staging: next,
+      runId: "run-2",
+      entries: freshEntries,
+      missing: [AT.files[0]],
+      ...base,
+    });
+
+    expect(carried).toHaveLength(1);
+    const byName = new Map(published.entries.map((e) => [e.name, e]));
+    expect(byName.get(AT.files[0])!.sourceRunId).toBe("run-1");
+    expect(byName.get(AT.files[1])!.sourceRunId).toBe("run-2");
+  });
+
+  it("checksums the carried files too, not just the fresh ones", async () => {
+    const data = tmp();
+    const prev = await createStaging(data, "run-1");
+    writeFileSync(join(prev.dataDir, AT.files[0]), "older");
+    await writeManifest(
+      prev,
+      manifest("run-1", { entries: await indexFiles(prev, "run-1") }),
+    );
+    await promote(data, "run-1");
+
+    const next = await createStaging(data, "run-2");
+    writeFileSync(join(next.dataDir, AT.files[1]), "fresh");
+    await publishRun(data, {
+      staging: next,
+      runId: "run-2",
+      entries: await indexFiles(next, "run-2"),
+      missing: [AT.files[0]],
+      ...base,
+    });
+
+    const sums = readFileSync(join(next.dataDir, "SHA256SUMS.txt"), "utf8");
+    expect(sums).toContain(AT.files[0]);
+    expect(sums).toContain(AT.files[1]);
+  });
+
+  it("publishes atomically: manifest, zip and symlink all land together", async () => {
+    const data = tmp();
+    const staging = await createStaging(data, "run-1");
+    for (const name of AT.files) writeFileSync(join(staging.dataDir, name), "x");
+
+    const { manifest: published } = await publishRun(data, {
+      staging,
+      runId: "run-1",
+      entries: await indexFiles(staging, "run-1"),
+      missing: [],
+      ...base,
+    });
+
+    expect(await readlink(join(data, "current"))).toBe(join("runs", "run-1"));
+    expect(published.zip).not.toBeNull();
+    expect(existsSync(join(data, "current", "tcrs-data.zip"))).toBe(true);
+    expect((await readCurrentManifest(data))!.id).toBe("run-1");
+    expect(published.totalBytes).toBe(3);
+  });
+
+  it("prunes the previous run once the swap has happened", async () => {
+    const data = tmp();
+    const first = await createStaging(data, "run-1");
+    writeFileSync(join(first.dataDir, AT.files[0]), "x");
+    await publishRun(data, {
+      staging: first,
+      runId: "run-1",
+      entries: await indexFiles(first, "run-1"),
+      missing: [],
+      ...base,
+    });
+
+    const second = await createStaging(data, "run-2");
+    writeFileSync(join(second.dataDir, AT.files[0]), "y");
+    await publishRun(data, {
+      staging: second,
+      runId: "run-2",
+      entries: await indexFiles(second, "run-2"),
+      missing: [],
+      ...base,
+    });
+
+    expect(await readdir(join(data, "runs"))).toEqual(["run-2"]);
+  });
+});

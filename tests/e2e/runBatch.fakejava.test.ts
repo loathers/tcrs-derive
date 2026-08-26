@@ -120,7 +120,14 @@ describe("a full batch", () => {
         expect(existsSync(join(handle.staging.dataDir, name)), name).toBe(true);
       }
     }
-    expect(existsSync(join(handle.staging.dataDir, "SHA256SUMS.txt"))).toBe(true);
+    // Checksums are written at PUBLISH time, not batch time, so they can cover
+    // files that carry-forward fills gaps with. See publishRun.
+    expect(existsSync(join(handle.staging.dataDir, "SHA256SUMS.txt"))).toBe(
+      false,
+    );
+    expect(result.entries.map((e) => e.name).sort()).toEqual(
+      only.flatMap((u) => [...permutationByUser(u)!.files]).sort(),
+    );
 
     // Nothing missing for the selection we actually ran.
     expect(result.missing).toEqual([]);

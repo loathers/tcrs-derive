@@ -19,6 +19,10 @@ import { ProgressPanel } from "../components/ProgressPanel.tsx";
 import { DownloadPanel } from "../components/DownloadPanel.tsx";
 import { EmptyState } from "../components/EmptyState.tsx";
 import { useRunStream } from "../hooks/useRunStream.ts";
+import { ServerNowProvider } from "../lib/server-now.ts";
+
+/** Stable identity: a fresh [] each render would defeat the memo below it. */
+const NO_STALE: readonly string[] = [];
 
 export function meta(_: Route.MetaArgs) {
   return [
@@ -64,39 +68,40 @@ export default function Home({ loaderData }: Route.ComponentProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId]);
 
-
   return (
-    <main className="wrap">
-      <Header
-        connection={connection}
-        permutationCount={status.permutationCount}
-      />
-
-      {loaderData.files === null ? (
-        <EmptyState
-          configOk={status.configOk}
-          missingPasswordCount={status.missingPasswordCount}
+    <ServerNowProvider value={status.now}>
+      <main className="wrap">
+        <Header
+          connection={connection}
+          permutationCount={status.permutationCount}
         />
-      ) : (
-        <DownloadPanel
-          files={loaderData.files}
-          dataset={status.dataset}
-          stale={status.dataset?.stalePermutations ?? []}
-        />
-      )}
 
-      {/* One section, two bodies. While a run is happening the progress replaces
+        {loaderData.files === null ? (
+          <EmptyState
+            configOk={status.configOk}
+            missingPasswordCount={status.missingPasswordCount}
+            permutationCount={status.permutationCount}
+          />
+        ) : (
+          <DownloadPanel
+            files={loaderData.files}
+            dataset={status.dataset}
+            stale={status.dataset?.stalePermutations ?? NO_STALE}
+          />
+        )}
+
+        {/* One section, two bodies. While a run is happening the progress replaces
           the controls rather than appearing below them. */}
-      {status.run !== null ? (
-        <ProgressPanel run={status.run} dev={status.dev} />
-      ) : (
-        <GenerateButton
-          cooldown={status.cooldown}
-          serverNow={status.now}
-          extra={status.dev ? <ResetCooldownButton /> : null}
-        />
-      )}
-    </main>
+        {status.run !== null ? (
+          <ProgressPanel run={status.run} dev={status.dev} />
+        ) : (
+          <GenerateButton
+            cooldown={status.cooldown}
+            serverNow={status.now}
+            extra={status.dev ? <ResetCooldownButton /> : null}
+          />
+        )}
+      </main>
+    </ServerNowProvider>
   );
 }
-

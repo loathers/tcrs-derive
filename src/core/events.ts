@@ -9,9 +9,9 @@
  * Error, no Map/Set, no Buffer, no meaningful `undefined`. It goes onto the wire
  * with JSON.stringify and must survive JSON.parse unchanged.
  *
- * Raw stdout deliberately does NOT travel here. It is a separate LogChunk channel
- * (see below): RunEvent is ~8k events per batch, whereas raw lines would be ~50k of
- * high-churn traffic through the reducer and every connected client for no UI gain.
+ * Raw stdout deliberately does NOT travel here. It goes straight to the per-run log
+ * files instead: RunEvent is ~8k events per batch, whereas raw lines would be ~50k
+ * of high-churn traffic through the reducer and every connected client for no gain.
  */
 
 export type Phase = "items" | "cafe_booze" | "cafe_food";
@@ -101,14 +101,3 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   ? Omit<T, K>
   : never;
 
-/**
- * Raw child output, on its own channel, deliberately NOT a RunEvent.
- * Consumed by logSink to write the per-permutation log file, and servable on
- * request. Never broadcast to every client.
- */
-export interface LogChunk {
-  readonly user: string;
-  readonly attempt: number;
-  readonly at: number;
-  readonly chunk: string;
-}

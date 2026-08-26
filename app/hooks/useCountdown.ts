@@ -1,45 +1,22 @@
 /**
- * A once-a-second countdown to an ISO instant.
+ * Milliseconds remaining until an ISO instant, ticking once a second.
  *
- * SSR-SAFE BY CONSTRUCTION. The first render, on the server AND during client
- * hydration, returns `serverRemainingMs` verbatim, so both trees agree. Only after
- * mount does it start computing from the wall clock.
- *
- * Doing it the obvious way (compute from Date.now() during render) produced a real
- * hydration mismatch: the server rendered the button enabled with "Generate now"
- * and the client wanted it disabled with "Available in 59m 37s". React does not
- * patch mismatched attributes, so the button was left in the wrong state.
- *
- * Once ticking, it corrects for clock skew using the server's own `now`, so a
- * mis-set laptop clock does not show a wrong "available in" time.
+ * Before mount this is `serverRemainingMs` verbatim, so the server and client
+ * render the same button. Doing it the obvious way, computing from Date.now()
+ * during render, produced a real mismatch: the server rendered the button enabled
+ * saying "Generate" and the client wanted it disabled saying "Available in
+ * 59m 37s", and React left the wrong one in place.
  */
-import { useEffect, useState } from "react";
+import { useServerClock } from "./useServerClock.ts";
 
 export function useCountdown(
   targetIso: string | null,
   serverNowIso: string,
   serverRemainingMs: number,
 ): number {
-  // Identical on server and on first client render, this is what makes hydration
-  // match. `mounted` stays false until the effect runs.
-  const [remaining, setRemaining] = useState(serverRemainingMs);
-
-  useEffect(() => {
-    if (targetIso === null) {
-      setRemaining(0);
-      return;
-    }
-    const skew = Date.parse(serverNowIso) - Date.now();
-    const tick = () => {
-      const target = Date.parse(targetIso);
-      setRemaining(
-        Number.isFinite(target) ? Math.max(0, target - (Date.now() + skew)) : 0,
-      );
-    };
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [targetIso, serverNowIso]);
-
-  return remaining;
+  const now = useServerClock(serverNowIso, 1000);
+  if (targetIso === null) return 0;
+  if (now === null) return serverRemainingMs;
+  const target = Date.parse(targetIso);
+  return Number.isFinite(target) ? Math.max(0, target - now) : 0;
 }

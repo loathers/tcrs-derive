@@ -6,7 +6,6 @@ export function Badge({
   children,
   title,
 }: {
-  tone?: "ok" | "warn" | "fail" | "idle";
   children: React.ReactNode;
   title?: string;
 }) {

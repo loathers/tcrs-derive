@@ -11,7 +11,7 @@
 
 import { join } from "node:path";
 import { EventBus } from "./bus.ts";
-import type { LogChunk, RunEvent, RunEventInit } from "./events.ts";
+import type { RunEvent, RunEventInit } from "./events.ts";
 import type { SecretStore } from "./env.server.ts";
 import { LogSink } from "./logSink.server.ts";
 import {
@@ -28,7 +28,7 @@ import {
   readManifest,
   resolveCurrent,
   runIdFor,
-  writeSums,
+  type ManifestEntry,
   type PermutationResult,
   type Staging,
 } from "./staging.server.ts";
@@ -73,6 +73,9 @@ export interface BatchResult {
   mafiaBuild: string | null;
   /** Names of the 162 expected files that this run did NOT produce. */
   missing: string[];
+  /** What this run actually produced, hashed once. Handed to publishRun so the
+   *  dataset is not read and hashed a second time. */
+  entries: ManifestEntry[];
 }
 
 export interface RunHandle {
@@ -81,7 +84,6 @@ export interface RunHandle {
   /** Live snapshot, so a late subscriber can bootstrap without missing anything. */
   readonly state: RunState;
   onEvent(listener: (e: RunEvent) => void): () => void;
-  onLog(listener: (c: LogChunk) => void): () => void;
   readonly result: Promise<BatchResult>;
   cancel(): void;
 }
@@ -140,7 +142,6 @@ export function startBatch(
 
   const runId = runIdFor(now());
   const bus = new EventBus();
-  const logListeners = new Set<(c: LogChunk) => void>();
   const controller = new AbortController();
 
   let state = initialRunState(selection.selected, {
@@ -166,7 +167,6 @@ export function startBatch(
     selection.selected,
     runId,
     bus,
-    logListeners,
     controller.signal,
     now,
   );
@@ -178,10 +178,6 @@ export function startBatch(
       return state;
     },
     onEvent: (l) => bus.on(l),
-    onLog(l) {
-      logListeners.add(l);
-      return () => logListeners.delete(l);
-    },
     result,
     cancel: () => controller.abort(),
   };
@@ -193,7 +189,6 @@ async function execute(
   selected: readonly Permutation[],
   runId: string,
   bus: EventBus,
-  logListeners: Set<(c: LogChunk) => void>,
   signal: AbortSignal,
   now: () => Date,
 ): Promise<BatchResult> {
@@ -293,18 +288,7 @@ async function execute(
           }
           emit(e);
         },
-        onLog: (chunk, attempt) => {
-          sink.write(p.user, chunk);
-          if (logListeners.size > 0) {
-            const c: LogChunk = {
-              user: p.user,
-              attempt,
-              at: now().getTime(),
-              chunk,
-            };
-            for (const l of logListeners) l(c);
-          }
-        },
+        onLog: (chunk) => sink.write(p.user, chunk),
       });
     } catch (e) {
       // runOne is specified never to reject. If it does, record it rather than
@@ -354,14 +338,13 @@ async function execute(
   // the staging directory being torn down, which surfaced as a spurious ENOENT
   // on SHA256SUMS.txt.tmp.
   let missing: string[] = [];
+  let entries: ManifestEntry[] = [];
   if (!signal.aborted) {
-    const entries = await indexFiles(staging, runId, (name) => {
-      const hit = permutationForFile(name);
-      return hit ? { user: hit.permutation.user, kind: hit.kind } : undefined;
-    });
+    entries = await indexFiles(staging, runId);
     const produced = new Set(entries.map((e) => e.name));
     missing = expectedFiles(selected).filter((n) => !produced.has(n));
-    await writeSums(staging, entries);
+    // Checksums are written by publishRun instead, once carry-forward has run, so
+    // they cover the files it filled the gaps with.
   } else {
     missing = expectedFiles(selected);
   }
@@ -391,6 +374,7 @@ async function execute(
     results: [...results.values()],
     mafiaBuild,
     missing,
+    entries,
   };
 }
 

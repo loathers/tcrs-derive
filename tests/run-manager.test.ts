@@ -264,8 +264,11 @@ describe("publishing", () => {
     const status = await m.status();
     expect(status.dataset).toBeNull();
     expect(status.lastAttempt?.outcome).toBe("failed");
-    // A failure gets the short cooldown, not 12 hours.
-    expect(status.cooldown.hours).toBe(1);
+    // A failure gets the short window, not 12 hours. `hours` reports the policy,
+    // so the window in force is read from remainingMs.
+    expect(status.cooldown.hours).toBe(12);
+    expect(status.cooldown.remainingMs).toBeLessThanOrEqual(60 * 60 * 1000);
+    expect(status.cooldown.remainingMs).toBeGreaterThan(0);
   }, 120_000);
 });
 

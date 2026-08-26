@@ -30,3 +30,6 @@ node_modules/
 /.react-router/
 *.tsbuildinfo
 .DS_Store
+
+# fake-java debug dump, if it is ever run outside a scratch cwd
+/stdin-received.txt

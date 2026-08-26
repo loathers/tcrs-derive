@@ -16,10 +16,7 @@ import type {
 } from "../../app/lib/api-types.ts";
 import type { RunEvent } from "#core/events";
 import type { SecretStore } from "#core/env.server";
-import {
-  ALL_PERMUTATIONS,
-  permutationForFile,
-} from "#core/permutations";
+import { ALL_PERMUTATIONS, permutationForFile } from "#core/permutations";
 import {
   MissingPasswordsError,
   startBatch,
@@ -28,25 +25,20 @@ import {
   type RunHandle,
 } from "#core/runBatch.server";
 import {
-  carryForward,
   clearWork,
-  indexFiles,
-  promote,
-  pruneRuns,
+  publishRun,
   readCurrentManifest,
-  readManifest,
-  resolveCurrent,
   writeManifest,
   ZIP_NAME,
-  type ManifestEntry,
   type RunManifest,
   type RunOutcome,
 } from "#core/staging.server";
-import { initialRunState, type RunState } from "#core/state";
+import type { RunState } from "#core/state";
 import { acquireLock, type Lock } from "#core/lock.server";
+import { isDev } from "./dev.server.ts";
 import { ensureJar, JarUnavailableError } from "#core/jar.server";
 import { Store } from "./store.server.ts";
-import { buildZip } from "./zip.server.ts";
+import { ZIP_URL } from "#server/download.server";
 
 export interface RunManagerOptions {
   store: Store;
@@ -125,8 +117,7 @@ export class RunManager {
       this.#o.config.jarPath = resolved;
       process.stdout.write(`KoLmafia jar: ${resolved}\n`);
     } catch (e) {
-      const detail =
-        e instanceof JarUnavailableError ? e.detail : String(e);
+      const detail = e instanceof JarUnavailableError ? e.detail : String(e);
       this.#configError = this.#configError
         ? `${this.#configError}; ${detail}`
         : detail;
@@ -368,8 +359,7 @@ export class RunManager {
     if (outcome === "success") return true;
 
     const previous = await readCurrentManifest(this.#o.config.dataDir);
-    const previousOk =
-      previous?.results.filter((r) => r.ok).length ?? 0;
+    const previousOk = previous?.results.filter((r) => r.ok).length ?? 0;
     return result.ok >= Math.max(1, previousOk);
   }
 
@@ -378,55 +368,19 @@ export class RunManager {
     outcome: RunOutcome,
     startedAt: number,
   ): Promise<void> {
-    const dataDir = this.#o.config.dataDir;
-    const previousDir = await resolveCurrent(dataDir);
-    const previousManifest = previousDir
-      ? await readManifest(previousDir)
-      : null;
-
-    // Fill gaps from the previous run, so the published set is always complete and
-    // no download link 404s.
-    const carried =
-      previousDir && previousManifest
-        ? await carryForward(
-            result.staging,
-            { dir: previousDir, manifest: previousManifest },
-            result.missing,
-          )
-        : [];
-
-    const fresh = await indexFiles(result.staging, result.runId, (name) => {
-      const hit = permutationForFile(name);
-      return hit ? { user: hit.permutation.user, kind: hit.kind } : undefined;
-    });
-    const entries = mergeEntries(fresh, carried);
-
-    // Built INSIDE the staging dir, before the symlink flips, so the zip is part
-    // of the atomic swap and is never missing or half-written.
-    const zip = await buildZip(result.staging, entries).catch(() => null);
-
-    const finishedAt = this.#now();
-    const manifest: RunManifest = {
-      version: 1,
-      id: result.runId,
-      startedAt: new Date(startedAt).toISOString(),
-      finishedAt: new Date(finishedAt).toISOString(),
-      outcome: outcome === "success" ? "success" : "partial",
-      durationMs: finishedAt - startedAt,
-      concurrency: this.#o.config.concurrency,
-      mafiaBuild: result.mafiaBuild,
+    await publishRun(this.#o.config.dataDir, {
+      staging: result.staging,
+      runId: result.runId,
+      entries: result.entries,
+      missing: result.missing,
       results: result.results,
-      entries,
-      zip,
-      totalBytes: entries.reduce((n, e) => n + e.bytes, 0),
-    };
-
-    await writeManifest(result.staging, manifest);
-    await promote(dataDir, result.runId);
+      mafiaBuild: result.mafiaBuild,
+      concurrency: this.#o.config.concurrency,
+      startedAt,
+      finishedAt: this.#now(),
+      outcome: outcome === "success" ? "success" : "partial",
+    });
     await this.#o.store.setCurrent(result.runId);
-    // Safe to delete the old dir immediately: an in-flight download holds an open
-    // fd, and POSIX keeps that inode alive.
-    await pruneRuns(dataDir, [result.runId]);
   }
 
   async #dataset(): Promise<DatasetSummary | null> {
@@ -447,7 +401,7 @@ export class RunManager {
       // takes ~12 minutes, so showing startedAt made "generated N minutes ago"
       // overstate the age by the whole duration. The cooldown still measures from
       // startedAt, deliberately, so a long run does not push the window later.
-      generatedAt: manifest.finishedAt ?? manifest.startedAt,
+      generatedAt: manifest.finishedAt,
       outcome: manifest.outcome === "success" ? "success" : "partial",
       fileCount: manifest.entries.length,
       totalBytes: manifest.totalBytes,
@@ -457,27 +411,30 @@ export class RunManager {
       zip:
         manifest.zip === null
           ? null
-          : { url: "/api/download/zip", bytes: manifest.zip.bytes },
+          : { url: ZIP_URL, bytes: manifest.zip.bytes },
     };
   }
 
   #statusFrom(dataset: DatasetSummary | null): StatusResponse {
     const active = this.#active;
     const raw = this.#o.store.cooldownInfo();
-    const cooldown: CooldownInfo = {
-      ...raw,
-      canGenerate: raw.canGenerate && active === null && this.#configError === null,
-      reason:
-        active !== null
-          ? "running"
-          : this.#configError !== null
-            ? "misconfigured"
+    // One decision, in the same priority order trigger() uses, so the button and
+    // the explanation beside it cannot disagree. Computing them separately let
+    // "not enough free disk" render next to an enabled button.
+    const reason: CooldownInfo["reason"] =
+      active !== null
+        ? "running"
+        : this.#configError !== null
+          ? "misconfigured"
+          : this.#freeBytes !== null && this.#freeBytes < this.#o.minFreeBytes
+            ? "low-disk"
             : !raw.canGenerate
               ? "cooldown"
-              : this.#freeBytes !== null &&
-                  this.#freeBytes < this.#o.minFreeBytes
-                ? "low-disk"
-                : "ok",
+              : "ok";
+    const cooldown: CooldownInfo = {
+      ...raw,
+      canGenerate: reason === "ok",
+      reason,
     };
 
     const last = this.#o.store.lastAttempt;
@@ -497,21 +454,14 @@ export class RunManager {
             },
       lastAttempt: last,
       permutationCount: ALL_PERMUTATIONS.length,
-      dev: process.env["NODE_ENV"] !== "production",
+      // Same predicate requireDev() uses, so the control the browser renders
+      // and the route that serves it cannot disagree.
+      dev: isDev(),
     };
   }
 
   async #refreshDisk(): Promise<void> {
     this.#freeBytes = await this.#o.store.freeBytes();
-  }
-
-  /** An empty state for a client connecting when nothing is running. */
-  static emptyState(): RunState {
-    return initialRunState(ALL_PERMUTATIONS, {
-      runId: "",
-      concurrency: 0,
-      maxAttempts: 3,
-    });
   }
 }
 
@@ -519,15 +469,6 @@ function classify(result: BatchResult): RunOutcome {
   if (result.cancelled) return "aborted";
   if (result.ok === 0) return "failed";
   return result.failed === 0 ? "success" : "partial";
-}
-
-function mergeEntries(
-  fresh: readonly ManifestEntry[],
-  carried: readonly ManifestEntry[],
-): ManifestEntry[] {
-  const byName = new Map(carried.map((e) => [e.name, e]));
-  for (const e of fresh) byName.set(e.name, e); // fresh always wins
-  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export { ZIP_NAME };

@@ -60,3 +60,36 @@ describe("core purity", () => {
     }
   });
 });
+
+/**
+ * The web app has exactly one wall clock.
+ *
+ * Four separate hydration mismatches on this page came from the same mistake:
+ * reading the browser's clock while rendering, so the server and the client
+ * disagreed. React silently declines to patch mismatched attributes, so a button
+ * stayed disabled and a title stayed wrong. useServerClock is the single sanctioned
+ * reader, it returns null until mount, and it corrects for skew. Anything else
+ * calling Date.now() in a component has almost certainly reintroduced the bug.
+ */
+describe("web app time", () => {
+  const CLOCK = "app/hooks/useServerClock.ts";
+
+  it("reads the clock only inside useServerClock", () => {
+    const offenders = walk("app")
+      .filter((f) => f !== CLOCK)
+      .filter((f) => stripComments(readFileSync(f, "utf8")).includes("Date.now("));
+    expect(offenders).toEqual([]);
+  });
+});
+
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+}
+
+function walk(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const path = `${dir}/${e.name}`;
+    if (e.isDirectory()) return walk(path);
+    return /\.tsx?$/.test(e.name) ? [path] : [];
+  });
+}

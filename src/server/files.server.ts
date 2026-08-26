@@ -14,8 +14,10 @@ import {
   CLASS_ORDER,
   CLASS_LABELS,
   CLASS_TOKENS,
+  FILE_KINDS,
 } from "#core/permutations";
 import { readCurrentManifest, SUMS_NAME } from "#core/staging.server";
+import { fileUrl } from "#server/download.server";
 
 export async function buildFileList(
   dataDir: string,
@@ -50,9 +52,12 @@ export async function buildFileList(
               kind: e.kind,
               name: e.name,
               bytes: e.bytes,
-              url: `/api/download/file/${e.name}`,
+              url: fileUrl(e.name),
             }))
-            .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind]),
+            // FILE_KINDS is the declared order; do not re-encode it here.
+            .sort(
+              (a, b) => FILE_KINDS.indexOf(a.kind) - FILE_KINDS.indexOf(b.kind),
+            ),
         };
       })
       .filter((x): x is PermutationFiles => x !== null);
@@ -66,11 +71,10 @@ export async function buildFileList(
 
   return {
     runId: manifest.id,
-    // Finish time, matching the dataset summary. See run-manager.server.ts.
-    generatedAt: manifest.finishedAt ?? manifest.startedAt,
+    // Finish time, matching the dataset summary. Non-null: the guard above
+    // returns early for an unfinished manifest.
+    generatedAt: manifest.finishedAt,
     groups,
-    sums: { name: SUMS_NAME, url: `/api/download/file/${SUMS_NAME}` },
+    sums: { name: SUMS_NAME, url: fileUrl(SUMS_NAME) },
   };
 }
-
-const KIND_ORDER = { items: 0, cafe_booze: 1, cafe_food: 2 } as const;

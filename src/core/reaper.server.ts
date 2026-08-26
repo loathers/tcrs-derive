@@ -26,10 +26,6 @@ export function untrack(pgid: number): void {
   live.delete(pgid);
 }
 
-export function trackedCount(): number {
-  return live.size;
-}
-
 /** TERM every tracked group, then KILL after a grace period. */
 export function reapAll(grace = 3000): void {
   for (const pgid of live) signalGroup(pgid, "SIGTERM");

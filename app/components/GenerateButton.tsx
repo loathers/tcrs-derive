@@ -53,7 +53,7 @@ export function GenerateButton({
       <h2>Regenerate</h2>
       <p className="muted small">
         Takes approximately 8 minutes. Limited to one run every{" "}
-        {cooldown.policyHours}h.
+        {cooldown.hours}h.
         {cooldown.reason === "misconfigured" &&
           " Server is misconfigured. Unavailable."}
         {cooldown.reason === "low-disk" && " Not enough free disk."}

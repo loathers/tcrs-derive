@@ -83,4 +83,3 @@ export function App({ source }: { source: StateSource }) {
   );
 }
 
-export type { RunState };

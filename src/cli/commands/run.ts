@@ -10,7 +10,7 @@ import { resolve } from "node:path";
 import { mkdir } from "node:fs/promises";
 import type { CliFlags } from "../index.ts";
 import { loadSecrets } from "#core/env.server";
-import { resolveBatchConfig } from "#core/config.server";
+import { list, resolveBatchConfig } from "#core/config.server";
 import { ensureJar, JarUnavailableError } from "#core/jar.server";
 import {
   MissingPasswordsError,
@@ -19,20 +19,7 @@ import {
   type BatchConfig,
 } from "#core/runBatch.server";
 import { acquireLock, LockHeldError } from "#core/lock.server";
-import {
-  carryForward,
-  clearWork,
-  indexFiles,
-  paths,
-  promote,
-  pruneRuns,
-  readCurrentManifest,
-  resolveCurrent,
-  writeManifest,
-  type RunManifest,
-} from "#core/staging.server";
-import { permutationForFile } from "#core/permutations";
-import { buildZip } from "#server/zip.server";
+import { clearWork, paths, publishRun } from "#core/staging.server";
 import { createPlainReporter, formatSummaryTable } from "../plain.ts";
 import { renderChart } from "../render.tsx";
 
@@ -117,50 +104,19 @@ export async function runCommand(flags: CliFlags): Promise<number> {
       (mode !== "never" && !result.cancelled && result.ok > 0);
 
     if (shouldPromote) {
-      const previousDir = await resolveCurrent(cfg.dataDir);
-      const previousManifest = await readCurrentManifest(cfg.dataDir);
-
-      // Carry forward any gaps, so the published set is always complete and no
-      // download link ever 404s.
-      const carried =
-        previousDir && previousManifest
-          ? await carryForward(
-              result.staging,
-              { dir: previousDir, manifest: previousManifest },
-              result.missing,
-            )
-          : [];
-
-      const fresh = await indexFiles(result.staging, result.runId, (name) => {
-        const hit = permutationForFile(name);
-        return hit ? { user: hit.permutation.user, kind: hit.kind } : undefined;
-      });
-      const entries = mergeEntries(fresh, carried);
-
-      // Built inside the staging dir before the swap, exactly as the server does,
-      // so a dataset published from the CLI is not missing its archive.
-      const zip = await buildZip(result.staging, entries).catch(() => null);
-
-      const manifest: RunManifest = {
-        version: 1,
-        id: result.runId,
-        startedAt: new Date(handle.state.startedAt ?? Date.now()).toISOString(),
-        finishedAt: new Date().toISOString(),
-        outcome: result.failed === 0 ? "success" : "partial",
-        durationMs:
-          handle.state.endedAt !== null && handle.state.startedAt !== null
-            ? handle.state.endedAt - handle.state.startedAt
-            : null,
-        concurrency: cfg.concurrency,
-        mafiaBuild: result.mafiaBuild,
+      const finishedAt = Date.now();
+      const { carried } = await publishRun(cfg.dataDir, {
+        staging: result.staging,
+        runId: result.runId,
+        entries: result.entries,
+        missing: result.missing,
         results: result.results,
-        entries,
-        zip,
-        totalBytes: entries.reduce((n, e) => n + e.bytes, 0),
-      };
-      await writeManifest(result.staging, manifest);
-      await promote(cfg.dataDir, result.runId);
-      await pruneRuns(cfg.dataDir, [result.runId]);
+        mafiaBuild: result.mafiaBuild,
+        concurrency: cfg.concurrency,
+        startedAt: handle.state.startedAt ?? finishedAt,
+        finishedAt,
+        outcome: result.failed === 0 ? "success" : "partial",
+      });
 
       if (!flags.json) {
         process.stdout.write(
@@ -182,19 +138,11 @@ export async function runCommand(flags: CliFlags): Promise<number> {
   }
 }
 
-function mergeEntries<T extends { name: string }>(
-  fresh: readonly T[],
-  carried: readonly T[],
-): T[] {
-  const byName = new Map(carried.map((e) => [e.name, e]));
-  for (const e of fresh) byName.set(e.name, e); // fresh wins
-  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
-}
 
 function buildConfig(flags: CliFlags): BatchConfig {
   const overrides: Partial<BatchConfig> = {};
-  if (flags.only !== undefined) overrides.only = split(flags.only);
-  if (flags.exclude !== undefined) overrides.exclude = split(flags.exclude);
+  if (flags.only !== undefined) overrides.only = list(flags.only);
+  if (flags.exclude !== undefined) overrides.exclude = list(flags.exclude);
   if (flags.resume) overrides.resume = true;
   if (flags.concurrency) overrides.concurrency = Number(flags.concurrency);
   if (flags.jar) overrides.jarPath = resolve(flags.jar);
@@ -215,9 +163,3 @@ function buildConfig(flags: CliFlags): BatchConfig {
   return resolveBatchConfig({ overrides });
 }
 
-function split(raw: string): string[] {
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s !== "");
-}

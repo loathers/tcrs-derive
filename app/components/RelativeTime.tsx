@@ -1,18 +1,21 @@
-import { useEffect, useState } from "react";
 import { formatAbsolute, formatRelative } from "../lib/format.ts";
+import { useServerClock } from "../hooks/useServerClock.ts";
+import { useServerNowIso } from "../lib/server-now.ts";
 
-/** "6 hours ago", refreshed periodically, with the absolute time in the title. */
+/**
+ * "6 hours ago", with the absolute UTC time on hover.
+ *
+ * Both sides render this against the SERVER's now until the clock mounts, so the
+ * two trees agree without suppressHydrationWarning. It used to need that escape
+ * hatch because it read Date.now() during render, which meant the text could
+ * legitimately differ by a tick between server and client.
+ */
 export function RelativeTime({ iso }: { iso: string }) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(t);
-  }, []);
+  const serverNowIso = useServerNowIso();
+  const ticking = useServerClock(serverNowIso, 30_000);
+  const now = ticking ?? Date.parse(serverNowIso);
   return (
-    // suppressHydrationWarning: the server and client render this a fraction of a
-    // second apart, so "1 minute ago" can legitimately differ. React patches text
-    // content (unlike attributes), so the client value wins and is correct.
-    <time dateTime={iso} title={formatAbsolute(iso)} suppressHydrationWarning>
+    <time dateTime={iso} title={formatAbsolute(iso)}>
       {formatRelative(iso, now)}
     </time>
   );

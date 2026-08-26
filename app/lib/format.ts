@@ -12,19 +12,19 @@ export function formatBytes(bytes: number): string {
   return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[i]}`;
 }
 
-export function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
-  if (m > 0) return `${m}m ${String(s).padStart(2, "0")}s`;
-  return `${s}s`;
-}
-
-/** `5h 42m 09s`, for the cooldown countdown. */
-export function formatCountdown(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
+/**
+ * `7m 42s`, `8h 12m`, `45s`.
+ *
+ * `round` picks the rounding for the seconds: elapsed time reads naturally to the
+ * nearest second, a countdown to the next one up, so "available in 1s" does not
+ * flick to 0s while there is still time left. One function so the two cannot
+ * drift into different shapes while rendered next to each other.
+ */
+export function formatDuration(
+  ms: number,
+  round: (n: number) => number = Math.round,
+): string {
+  const total = Math.max(0, round(ms / 1000));
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
@@ -32,6 +32,11 @@ export function formatCountdown(ms: number): string {
   if (h > 0) return `${h}h ${pad(m)}m`;
   if (m > 0) return `${m}m ${pad(s)}s`;
   return `${s}s`;
+}
+
+/** A duration that should never round down past its own deadline. */
+export function formatCountdown(ms: number): string {
+  return formatDuration(ms, Math.ceil);
 }
 
 export function formatRelative(iso: string, nowMs: number): string {

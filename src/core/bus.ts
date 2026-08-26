@@ -47,8 +47,4 @@ export class EventBus {
       this.#listeners.delete(listener);
     };
   }
-
-  get listenerCount(): number {
-    return this.#listeners.size;
-  }
 }

@@ -35,7 +35,7 @@ function num(raw: string | undefined, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-function list(raw: string | undefined): string[] | undefined {
+export function list(raw: string | undefined): string[] | undefined {
   if (raw === undefined) return undefined;
   const items = raw
     .split(",")

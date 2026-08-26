@@ -1,4 +1,9 @@
-import { CLASS_ORDER, CLASS_LABELS, SIGNS } from "#core/permutations";
+import {
+  CLASS_ORDER,
+  CLASS_LABELS,
+  SIGNS,
+  userFor,
+} from "#core/permutations";
 import type { RunState } from "#core/state";
 import { PermutationCell } from "./PermutationCell.tsx";
 
@@ -31,7 +36,7 @@ export function ProgressGrid({ state }: { state: RunState }) {
             <tr key={abbr}>
               <th scope="row">{CLASS_LABELS[abbr]}</th>
               {SIGNS.map((sign) => {
-                const user = `${abbr}_${sign.toLowerCase()}`;
+                const user = userFor(abbr, sign);
                 const perm = state.perms[user];
                 return (
                   <td key={sign}>

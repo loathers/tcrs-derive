@@ -6,7 +6,9 @@
  */
 
 import type { RunEvent } from "#core/events";
-import { reduceRunState, type RunState } from "#core/state";
+import { initialRunState, reduceRunState, type RunState } from "#core/state";
+
+const EMPTY_RUN = { runId: "", concurrency: 0, maxAttempts: 0 } as const;
 import type { RunHandle } from "#core/runBatch.server";
 
 export type Connection = "local" | "connecting" | "open" | "lost";
@@ -96,28 +98,8 @@ export function remoteSource(o: RemoteSourceOptions): StateSource & {
 
   return {
     get initial() {
-      return (
-        state ?? {
-          runId: "",
-          startedAt: null,
-          endedAt: null,
-          cancelled: false,
-          warmup: "pending",
-          concurrency: 0,
-          order: [],
-          perms: {},
-          summary: {
-            total: 0,
-            done: 0,
-            running: 0,
-            failed: 0,
-            queued: 0,
-            skipped: 0,
-          },
-          lastSeq: 0,
-          mafiaBuild: null,
-        }
-      );
+      // The real constructor, so a new RunState field cannot be forgotten here.
+      return state ?? initialRunState([], EMPTY_RUN);
     },
     subscribe(cb) {
       listeners.add(cb);

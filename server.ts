@@ -14,6 +14,7 @@
 
 import { createRequestHandler } from "@react-router/express";
 import express from "express";
+import { isDev } from "#server/dev.server";
 import {
   initServer,
   mountApiRoutes,
@@ -22,7 +23,7 @@ import {
 
 const PORT = Number(process.env["PORT"] ?? 3000);
 const HOST = process.env["HOST"] ?? "0.0.0.0";
-const DEV = process.env["NODE_ENV"] !== "production";
+const DEV = isDev();
 
 // Boot recovery must complete before anything is served.
 await initServer();

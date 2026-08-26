@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { ClassGroup } from "../lib/api-types.ts";
 import { FILE_KIND_LABELS } from "#core/permutations";
 import { formatBytes } from "../lib/format.ts";
@@ -10,7 +11,7 @@ import { Badge } from "./Badge.tsx";
  * above, and every cell is a plain <a download> so right-click / curl / download
  * managers all behave normally.
  */
-export function ClassSection({
+export const ClassSection = memo(function ClassSection({
   group,
   stale,
 }: {
@@ -70,4 +71,4 @@ export function ClassSection({
       </div>
     </details>
   );
-}
+});

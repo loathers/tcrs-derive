@@ -17,6 +17,7 @@ import { getRunManager, peekRunManager } from "./singleton.server.ts";
 import { sseHandler } from "./sse-hub.server.ts";
 import { fileHandler, logHandler, zipHandler } from "./download.server.ts";
 import { resolveBatchConfig } from "#core/config.server";
+import { ZIP_URL, FILE_URL_BASE } from "#server/download.server";
 
 export async function initServer(): Promise<void> {
   // Boot recovery (single-instance lock, orphan cleanup, work-dir clearing) happens
@@ -52,8 +53,8 @@ export function mountApiRoutes(app: Express): void {
     await sseHandler(manager)(req, res);
   });
 
-  app.get("/api/download/zip", zipHandler(dataDir));
-  app.get("/api/download/file/:name", fileHandler(dataDir));
+  app.get(ZIP_URL, zipHandler(dataDir));
+  app.get(`${FILE_URL_BASE}/:name`, fileHandler(dataDir));
   app.get("/api/logs/:user", logHandler(dataDir));
 
   // Cheap, and deliberately still 200 DURING a run: a 7.5-minute derive is not

@@ -13,7 +13,6 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   clearWork,
-  paths,
   pruneRuns,
   readManifest,
   resolveCurrent,
@@ -56,12 +55,14 @@ export interface CooldownConfig {
 
 export interface CooldownInfo {
   /**
-   * The configured policy, always. Distinct from `hours`, which is the window
-   * that happens to apply to the LAST outcome and can legitimately be 0 (a run
-   * aborted in its first few minutes is treated as never having happened). The
-   * UI wants the policy for "one run per Xh", not the momentary window.
+   * The configured policy, for "one run per Xh".
+   *
+   * The window that actually applies to the last outcome is NOT reported: it is
+   * already expressed, unambiguously, by nextAllowedAt / remainingMs /
+   * canGenerate. Carrying it as a second number called `hours` meant the obvious
+   * name held the non-obvious value, and the UI rendered "One run per 0h" after a
+   * run aborted early. Call hoursFor() if you need the effective window.
    */
-  policyHours: number;
   hours: number;
   nextAllowedAt: string | null;
   remainingMs: number;
@@ -198,23 +199,21 @@ export class Store {
    */
   cooldownInfo(): CooldownInfo {
     const last = this.lastAttempt;
-    const policyHours = this.#cooldown.successHours;
+    const hours = this.#cooldown.successHours;
 
     if (last === null) {
       return {
-        policyHours,
-        hours: policyHours,
+        hours,
         nextAllowedAt: null,
         remainingMs: 0,
         canGenerate: true,
       };
     }
 
-    const hours = hoursFor(last.outcome, this.#cooldown);
-    if (hours === 0) {
+    const effective = hoursFor(last.outcome, this.#cooldown);
+    if (effective === 0) {
       return {
-        policyHours,
-        hours: 0,
+        hours,
         nextAllowedAt: null,
         remainingMs: 0,
         canGenerate: true,
@@ -222,10 +221,9 @@ export class Store {
     }
 
     const started = Date.parse(last.startedAt);
-    const nextAllowed = started + hours * 3_600_000;
+    const nextAllowed = started + effective * 3_600_000;
     const remainingMs = Math.max(0, nextAllowed - this.#now());
     return {
-      policyHours,
       hours,
       nextAllowedAt: new Date(nextAllowed).toISOString(),
       remainingMs,
@@ -303,4 +301,3 @@ export function hoursFor(
   }
 }
 
-export { paths };

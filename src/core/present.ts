@@ -54,6 +54,36 @@ export function percentFor(progress: { done: number; total: number }): number {
   return Math.floor((progress.done * 100) / progress.total);
 }
 
+/**
+ * How far along a permutation is, 0-100, as BOTH the bar and the label must show
+ * it. One derivation: the cell renders a gradient from this and a percentage
+ * label beside it, and when the two were derived separately the bar filled to
+ * 100% while the text read 99%.
+ */
+export function progressPercent(p: PermState): number {
+  const s = p.status;
+  switch (s.kind) {
+    case "done":
+    case "failed":
+    case "skipped":
+      return 100;
+    case "queued":
+    case "login":
+    case "stalled":
+    case "retrying":
+      return 0;
+    case "deriving":
+      // The cafe phases report nothing and are the last sliver of the work, so
+      // they sit at the same near-complete number the items phase caps at.
+      if (s.phase !== "items") return CAFE_PERCENT;
+      return s.progress === null ? 0 : percentFor(s.progress);
+  }
+}
+
+/** Where the cafe phases park. The items phase caps at 99 for the same reason:
+ *  mafia announces every 100 items and the total is not a multiple of 100. */
+const CAFE_PERCENT = 99;
+
 /** ` try 2/3`, or "" on the first attempt (run-all.sh:184-188). */
 function trySuffix(p: PermState): string {
   return p.attempt > 1 ? ` try ${p.attempt}/${p.maxAttempts}` : "";
@@ -93,8 +123,9 @@ export function rowView(p: PermState): RowView {
 
     case "deriving": {
       if (s.phase !== "items") {
-        // cafe booze / cafe food report no progress at all, so show a full bar
-        // labelled with the phase rather than a percentage (run-all.sh:194).
+        // A full bar labelled with the phase, matching run-all.sh:194 byte for
+        // byte. The web cell shows a number instead and uses progressPercent(),
+        // which is why that is a separate derivation rather than this one.
         return row(p, 100, FILL_ACTIVE, `${PHASE_LABEL[s.phase]}${t}`, "active");
       }
       // The items phase is the bulk and its percentage is meaningful. Before the
@@ -164,10 +195,7 @@ export function cellLabel(p: PermState): string {
     case "login":
       return "0%";
     case "deriving":
-      // The cafe phases report no progress and are the last sliver of the work,
-      // so they show the same near-complete number the items phase caps at.
-      if (s.phase !== "items") return "99%";
-      return s.progress === null ? "0%" : `${percentFor(s.progress)}%`;
+      return `${progressPercent(p)}%`;
   }
 }
 

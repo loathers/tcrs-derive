@@ -25,9 +25,8 @@ export interface DatasetSummary {
 }
 
 export interface CooldownInfo {
-  /** The configured policy. `hours` is the window applying to the last outcome,
-   *  which can be 0, so the UI uses this one for "one run per Xh". */
-  policyHours: number;
+  /** The configured policy, for "one run per Xh". The window actually in force is
+   *  expressed by nextAllowedAt / remainingMs / canGenerate. */
   hours: number;
   nextAllowedAt: string | null;
   remainingMs: number;

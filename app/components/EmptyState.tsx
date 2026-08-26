@@ -1,9 +1,11 @@
 export function EmptyState({
   configOk,
   missingPasswordCount,
+  permutationCount,
 }: {
   configOk: boolean;
   missingPasswordCount: number;
+  permutationCount: number;
 }) {
   return (
     <section>
@@ -11,7 +13,7 @@ export function EmptyState({
       <p>
         {configOk
           ? "Nothing generated yet."
-          : `Unavailable: ${missingPasswordCount} of 54 account passwords missing from the server config.`}
+          : `Unavailable: ${missingPasswordCount} of ${permutationCount} account passwords missing from the server config.`}
       </p>
     </section>
   );

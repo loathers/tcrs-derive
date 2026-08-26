@@ -262,45 +262,41 @@ describe("attempt history", () => {
   });
 });
 
-describe("policyHours versus the effective window", () => {
-  it("always reports the configured policy, even when nothing is blocking", async () => {
-    // The rendered sentence is "one run per Xh", which is a statement of policy.
-    // `hours` is the window applying to the LAST outcome and is legitimately 0
-    // after an early abort, which rendered as "One run per 0h".
+describe("the reported cooldown policy", () => {
+  it("reports the configured policy even when nothing is blocking", () => {
+    // The rendered sentence is "one run per Xh", a statement of policy. Reporting
+    // the window that applied to the LAST outcome rendered "One run per 0h" after
+    // a run aborted in its first few minutes.
     const store = new Store(tmp(), COOLDOWN, () => 0);
-    await store.beginAttempt("r1", 0);
-    await store.endAttempt("r1", "aborted-early");
-
-    const info = store.cooldownInfo();
-    expect(info.hours).toBe(0); // nothing is blocking right now
-    expect(info.policyHours).toBe(12); // but the policy is still 12h
-    expect(info.canGenerate).toBe(true);
+    return store
+      .beginAttempt("r1", 0)
+      .then(() => store.endAttempt("r1", "aborted-early"))
+      .then(() => {
+        const info = store.cooldownInfo();
+        expect(info.hours).toBe(12);
+        // Nothing is blocking, and that is said by these, not by `hours`.
+        expect(info.canGenerate).toBe(true);
+        expect(info.remainingMs).toBe(0);
+        expect(info.nextAllowedAt).toBeNull();
+      });
   });
 
   it("reports the policy before any run has happened", () => {
-    const store = new Store(tmp(), COOLDOWN, () => 0);
-    expect(store.cooldownInfo().policyHours).toBe(12);
+    expect(new Store(tmp(), COOLDOWN, () => 0).cooldownInfo().hours).toBe(12);
   });
 
-  it("keeps the policy while a short failure window is in effect", async () => {
+  it("keeps reporting the policy while a short failure window is in force", async () => {
+    // A failure gets a 1h window, but the policy is still 12h. The effective
+    // window is expressed by remainingMs, and hoursFor() computes it for anyone
+    // who genuinely needs the number.
     const c = clock(0);
     const store = new Store(tmp(), COOLDOWN, c.now);
     await store.beginAttempt("r1", 0);
     await store.endAttempt("r1", "failed");
 
     const info = store.cooldownInfo();
-    expect(info.hours).toBe(1); // failures get the short window
-    expect(info.policyHours).toBe(12);
-  });
-
-  it("reports the policy during a successful cooldown too", async () => {
-    const c = clock(0);
-    const store = new Store(tmp(), COOLDOWN, c.now);
-    await store.beginAttempt("r1", 0);
-    await store.endAttempt("r1", "success");
-
-    const info = store.cooldownInfo();
     expect(info.hours).toBe(12);
-    expect(info.policyHours).toBe(12);
+    expect(info.remainingMs).toBe(1 * HOUR);
+    expect(hoursFor("failed", COOLDOWN)).toBe(1);
   });
 });
