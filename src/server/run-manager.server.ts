@@ -321,7 +321,7 @@ export class RunManager {
       const result = await handle.result;
       outcome = classify(result);
 
-      if (await this.#shouldPublish(result, outcome)) {
+      if (this.#shouldPublish(result)) {
         await this.#publish(result, outcome, startedAt);
       } else {
         await rm(handle.staging.dir, { recursive: true, force: true });
@@ -345,22 +345,17 @@ export class RunManager {
   }
 
   /**
-   * Publish only if coverage did not regress.
+   * Publish unless the run produced nothing usable.
    *
-   * 53 fresh files beat 54 twelve-hour-old ones; 12 fresh do not. Comparing
-   * against the previous run captures both directions.
+   * publishRun() backfills every file this run did not reproduce from the previous
+   * run, so what gets published is the union of old and new, with fresh files
+   * winning. Coverage therefore cannot regress, and the old comparison of this
+   * run's ok count against the previous run's only ever discarded good data: one
+   * flaky permutation was enough to bin an entire 54-login run.
    */
-  async #shouldPublish(
-    result: BatchResult,
-    outcome: RunOutcome,
-  ): Promise<boolean> {
+  #shouldPublish(result: BatchResult): boolean {
     if (result.cancelled) return false;
-    if (result.ok === 0) return false;
-    if (outcome === "success") return true;
-
-    const previous = await readCurrentManifest(this.#o.config.dataDir);
-    const previousOk = previous?.results.filter((r) => r.ok).length ?? 0;
-    return result.ok >= Math.max(1, previousOk);
+    return result.ok > 0;
   }
 
   async #publish(

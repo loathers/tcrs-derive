@@ -70,8 +70,8 @@ function config(dataDir: string, over: Partial<BatchConfig> = {}): BatchConfig {
 async function manager(
   over: Partial<BatchConfig> = {},
   secrets = allSecrets,
+  dataDir = tmp(),
 ): Promise<{ manager: RunManager; store: Store; dataDir: string }> {
-  const dataDir = tmp();
   const store = new Store(dataDir, { successHours: 12, failedHours: 1 });
   const m = new RunManager({
     store,
@@ -270,6 +270,45 @@ describe("publishing", () => {
     expect(status.cooldown.remainingMs).toBeLessThanOrEqual(60 * 60 * 1000);
     expect(status.cooldown.remainingMs).toBeGreaterThan(0);
   }, 120_000);
+
+  it("publishes a partial run that derived fewer permutations than the last one", async () => {
+    const dataDir = tmp();
+
+    // Run 1: both permutations derive. 6 files published.
+    const first = await manager(
+      { only: ["at_blender", "at_packrat"] },
+      allSecrets,
+      dataDir,
+    );
+    expect(first.manager.trigger().accepted).toBe(true);
+    await waitUntil(async () => (await first.manager.status()).run === null, 60_000);
+    const before = (await first.manager.status()).dataset!;
+    expect(before.fileCount).toBe(6);
+    await first.manager.shutdown();
+
+    // Run 2: --fake-perm pins the written filenames to at_blender, so at_packrat
+    // writes files that are not its own and fails to collect any. 1 ok vs 2 before.
+    const second = await manager(
+      {
+        only: ["at_blender", "at_packrat"],
+        javaOpts: [FAKE_JAVA, "--fake-perm=Accordion_Thief_Blender"],
+      },
+      allSecrets,
+      dataDir,
+    );
+    await second.manager.clearCooldown();
+    expect(second.manager.trigger().accepted).toBe(true);
+    await waitUntil(async () => (await second.manager.status()).run === null, 60_000);
+
+    const after = (await second.manager.status()).dataset!;
+    // The run must reach the dataset: one flaky permutation is not a reason to bin
+    // three fresh files and eight minutes of derive.
+    expect(after.runId).not.toBe(before.runId);
+    expect(after.outcome).toBe("partial");
+    // 3 fresh + 3 carried forward from run 1: coverage held, it did not regress.
+    expect(after.fileCount).toBe(6);
+    await second.manager.shutdown();
+  }, 180_000);
 });
 
 async function waitUntil(
