@@ -55,10 +55,12 @@ RUN set -eux; \
     else \
       api="https://api.github.com/repos/kolmafia/kolmafia/releases/latest"; \
     fi; \
-    release="$(curl -fsSL "$api")"; \
-    url="$(echo "$release" \
-      | jq -r '.assets[] | select(.name | endswith(".jar")) | .browser_download_url' | head -n1)"; \
-    tag="$(echo "$release" | jq -r '.tag_name')"; \
+    # To a file, not a shell variable: the release body carries a changelog full of
+    # backslash escapes, and dash's echo expands them, corrupting the JSON before jq
+    # ever sees it.
+    curl -fsSL "$api" -o /tmp/release.json; \
+    url="$(jq -r '.assets[] | select(.name | endswith(".jar")) | .browser_download_url' /tmp/release.json | head -n1)"; \
+    tag="$(jq -r '.tag_name' /tmp/release.json)"; \
     test -n "$url"; \
     test -n "$tag"; \
     echo "Fetching $url ($tag)"; \
