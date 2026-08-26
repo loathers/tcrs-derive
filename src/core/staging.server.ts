@@ -85,9 +85,17 @@ export interface RunManifest {
   concurrency: number;
   mafiaBuild: string | null;
   /**
-   * Describes the PUBLISHED DATASET, not just this run: a permutation whose files
-   * were carried forward keeps the result of the run that derived them. Same mix
-   * of runs that ManifestEntry.sourceRunId records per file.
+   * Describes the PUBLISHED DATASET, not just this run -- the same mix of runs
+   * ManifestEntry.sourceRunId records per file -- with one deliberate asymmetry.
+   *
+   * A permutation this run never attempted keeps the result of the run that
+   * derived its carried files. A permutation this run attempted AND FAILED keeps
+   * its own failed result even though its files were carried, so the manifest
+   * reports filesCopied: 0 against three entries that are present.
+   *
+   * That asymmetry is what resumableUsers wants: ok: false there makes the next
+   * --resume re-derive a permutation whose only files are stale, rather than
+   * adopting them as this run's work.
    */
   results: PermutationResult[];
   entries: ManifestEntry[];

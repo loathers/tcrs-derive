@@ -16,7 +16,6 @@ import type { SecretStore } from "./env.server.ts";
 import { LogSink } from "./logSink.server.ts";
 import {
   ALL_PERMUTATIONS,
-  permutationForFile,
   selectPermutations,
   type Permutation,
 } from "./permutations.ts";

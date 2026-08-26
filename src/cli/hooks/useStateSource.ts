@@ -26,8 +26,9 @@ export function useStateSource(source: StateSource, fps = 10): RunState {
     return () => {
       unsubscribe();
       clearInterval(timer);
-      // Flush the final frame, so the last state is what stays in scrollback.
-      setState(latest.current);
+      // No final flush here: React discards state updates on an unmounting
+      // component, so one would do nothing. What stays in scrollback is the
+      // summary runCommand prints from handle.state after waitUntilExit().
     };
   }, [source, fps]);
 
