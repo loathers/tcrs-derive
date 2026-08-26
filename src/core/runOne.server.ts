@@ -124,6 +124,11 @@ export async function runOne(o: RunOneOptions): Promise<RunOneResult> {
       return result(false, "spawn");
     }
 
+    // Seeding is a rm -rf + cp -r of the template tree, long enough for a cancel to
+    // land inside it. The top-of-loop check has already passed by then, so without
+    // this one the JVM is spawned after the run was told to stop.
+    if (signal?.aborted) return result(false, "cancelled");
+
     const tracker = new DeriveTracker();
     lastTracker = tracker;
     const outcome = await runAttempt(o, attempt, tracker, clock);
@@ -422,6 +427,10 @@ async function runAttempt(
     void kill(child, pgid, "SIGKILL");
   };
   signal?.addEventListener("abort", onAbort, { once: true });
+  // addEventListener on an ALREADY-aborted signal never fires, so the abort has to
+  // be replayed by hand. Covers the window between the check above and here, which
+  // spans the spawn itself.
+  if (signal?.aborted) onAbort();
 
   await closed;
 

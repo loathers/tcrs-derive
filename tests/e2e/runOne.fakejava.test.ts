@@ -337,6 +337,30 @@ describe("cancellation", () => {
     expect(r.reason).toBe("cancelled");
     expect(h.events).toHaveLength(0);
   });
+
+  it("honours an abort that lands while the work dir is being seeded", async () => {
+    // perm:attempt is emitted immediately before `await seedWorkdir`, which is a
+    // rm -rf + cp -r of the template tree. Aborting from the emit handler lands in
+    // that window deterministically: past the top-of-loop check, before any child
+    // exists. A listener added to an already-aborted signal never fires, so getting
+    // this wrong leaves a JVM nothing will kill until the 30-minute hard timeout.
+    const controller = new AbortController();
+    const h = harness(["--fake-delay=5"], {
+      signal: controller.signal,
+      maxAttempts: 3,
+    });
+    h.opts.emit = (e) => {
+      h.events.push(e);
+      if (e.type === "perm:attempt") controller.abort();
+    };
+
+    const r = await runOne(h.opts);
+
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe("cancelled");
+    expect(h.find("perm:spawned")).toHaveLength(0);
+    expect(h.find("perm:attempt")).toHaveLength(1);
+  }, 30_000);
 });
 
 describe("work dir seeding", () => {
