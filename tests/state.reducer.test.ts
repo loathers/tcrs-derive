@@ -218,3 +218,62 @@ describe("run lifecycle", () => {
     expect(s.lastSeq).toBe(11);
   });
 });
+
+describe("late output from a killed JVM", () => {
+  /**
+   * REGRESSION: perm:progress and perm:phase set `deriving` unconditionally. kill()
+   * gives the JVM a 3s TERM grace and stdout is still being drained through it, so
+   * any Progress: or phase header in that tail flipped a row that had already
+   * timed out back to `deriving 87% items` -- and it was counted as running again
+   * until perm:failed finally landed.
+   */
+  it("does not let a stalled row go back to deriving", () => {
+    const s = reduceAll(
+      freshState(["tt_wallaby"]),
+      stamp([
+        { type: "perm:attempt", user: "tt_wallaby", attempt: 1, maxAttempts: 3 },
+        { type: "perm:phase", user: "tt_wallaby", phase: "items" },
+        { type: "perm:progress", user: "tt_wallaby", done: 10_500, total: 12_070 },
+        { type: "perm:hardTimeout", user: "tt_wallaby", seconds: 1800 },
+        // Buffered stdout, arriving after the kill.
+        { type: "perm:progress", user: "tt_wallaby", done: 10_600, total: 12_070 },
+        { type: "perm:phase", user: "tt_wallaby", phase: "cafe_booze" },
+      ]),
+    );
+
+    // Still stalled, and with no percentage to render: `stalled` carries no phase
+    // or progress, so the row cannot show a stale 87% either. It goes on counting
+    // as in-flight, which is correct -- the JVM is still being killed.
+    expect(s.perms["tt_wallaby"]!.status.kind).toBe("stalled");
+  });
+
+  it("does not let a finished row go back to deriving", () => {
+    const s = reduceAll(
+      freshState(["tt_wallaby"]),
+      stamp([
+        ...happyPath("tt_wallaby"),
+        { type: "perm:progress", user: "tt_wallaby", done: 12_070, total: 12_070 },
+      ]),
+    );
+
+    expect(s.perms["tt_wallaby"]!.status.kind).toBe("done");
+  });
+
+  it("still reopens the row on the next attempt", () => {
+    // perm:attempt is the legitimate way out of stalled, and must keep working.
+    const s = reduceAll(
+      freshState(["tt_wallaby"]),
+      stamp([
+        { type: "perm:attempt", user: "tt_wallaby", attempt: 1, maxAttempts: 3 },
+        { type: "perm:hardTimeout", user: "tt_wallaby", seconds: 1800 },
+        { type: "perm:attempt", user: "tt_wallaby", attempt: 2, maxAttempts: 3 },
+        { type: "perm:phase", user: "tt_wallaby", phase: "items" },
+        { type: "perm:progress", user: "tt_wallaby", done: 42, total: 12_070 },
+      ]),
+    );
+
+    const status = s.perms["tt_wallaby"]!.status;
+    expect(status.kind).toBe("deriving");
+    expect(status.kind === "deriving" && status.progress?.done).toBe(42);
+  });
+});

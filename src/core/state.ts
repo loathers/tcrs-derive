@@ -249,6 +249,7 @@ function apply(state: RunState, event: RunEvent): RunState {
       return state;
 
     case "perm:phase":
+      if (isSettled(state.perms[event.user]?.status)) return state;
       // progress starts null on every phase change. Only the items phase will
       // ever fill it in.
       return patch(state, event.user, () => ({
@@ -256,6 +257,7 @@ function apply(state: RunState, event: RunEvent): RunState {
       }));
 
     case "perm:progress":
+      if (isSettled(state.perms[event.user]?.status)) return state;
       return patch(state, event.user, (p) => ({
         status: {
           kind: "deriving",
@@ -329,6 +331,26 @@ function apply(state: RunState, event: RunEvent): RunState {
 }
 
 /** Replace one permutation's state immutably, structurally sharing the rest. */
+const SETTLED: ReadonlySet<PermStatus["kind"]> = new Set([
+  "stalled",
+  "done",
+  "failed",
+  "skipped",
+]);
+
+/**
+ * Statuses that no longer accept progress.
+ *
+ * kill() gives the JVM a 3s TERM grace and stdout is drained throughout it, so a
+ * `Progress:` or phase header can arrive AFTER the row has already timed out or
+ * finished. Without this those late lines put the row back to `deriving 87% items`
+ * and it counts as running again until perm:failed lands. perm:attempt is the
+ * legitimate way back out, and sets `login` itself.
+ */
+function isSettled(status: PermStatus | undefined): boolean {
+  return status !== undefined && SETTLED.has(status.kind);
+}
+
 function patch(
   state: RunState,
   user: string,
