@@ -292,11 +292,21 @@ async function runAttempt(
 	emit({ type: "perm:spawned", user: p.user, attempt, pid: pgid });
 
 	// The password goes on stdin, never argv, argv is visible in ps and
-	// /proc/<pid>/cmdline. The two `no`s answer the login-time "derive TCRS data?"
-	// prompts. Sending exactly two keeps the following commands in the right slots
-	// whether zero, one or two prompts appear. The trailing newline AND the EOF from
-	// end() are both load-bearing: without EOF, an unexpected prompt blocks until the
-	// hard timeout.
+	// /proc/<pid>/cmdline.
+	//
+	// The two `no`s are padding for the login-time "no TCRS data, derive it?" prompt,
+	// and they are NOT what answers it. Every captured run shows the prompt offering
+	// "(Y/N, leave blank to choose N)" and defaulting itself to N, with both `no`s
+	// falling through to the CLI as "Unable to invoke no" -- benign, and pinned as a
+	// known false positive in parser.falsePositives. r29192 drops the prompt entirely
+	// and behaves the same way.
+	//
+	// They stay because a jar that DID consume the input would otherwise eat
+	// `tcrs reset`. Two covers zero, one or two prompts without the commands below
+	// shifting slots.
+	//
+	// The trailing newline AND the EOF from end() are both load-bearing: without EOF,
+	// an unexpected prompt blocks until the hard timeout.
 	const script = [
 		p.user,
 		o.password,
