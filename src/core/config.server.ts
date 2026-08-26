@@ -5,7 +5,6 @@
  */
 
 import type { BatchConfig } from "./runBatch.server.ts";
-import type { TcrsCommand } from "./runOne.server.ts";
 
 export const DEFAULTS = {
 	/**
@@ -45,16 +44,6 @@ export function list(raw: string | undefined): string[] | undefined {
 	return items.length > 0 ? items : undefined;
 }
 
-/**
- * Only the two commands mafia actually has, defaulting to the one every jar has.
- *
- * A typo must not become an unknown-command failure repeated 54 times, so anything
- * unrecognised falls back rather than being passed through to the JVM.
- */
-export function tcrsCommandFrom(raw: string | undefined): TcrsCommand {
-	return raw?.trim() === "introspect" ? "introspect" : "derive";
-}
-
 function bool(raw: string | undefined): boolean {
 	return raw === "1" || raw === "true";
 }
@@ -92,7 +81,6 @@ export function resolveBatchConfig(o: ResolveOptions = {}): BatchConfig {
 		warmupTimeoutMs:
 			num(env.WARMUP_TIMEOUT, DEFAULTS.warmupTimeoutMs / 1000) * 1000,
 		skipWarmup: bool(env.SKIP_WARMUP),
-		tcrsCommand: tcrsCommandFrom(env.TCRS_COMMAND),
 		keepWorkdirs: bool(env.KEEP_WORKDIRS),
 	};
 	return { ...cfg, ...o.overrides };

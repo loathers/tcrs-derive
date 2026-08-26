@@ -32,7 +32,6 @@ Run options:
   --max-attempts N          login attempts per permutation
   --retry-backoff S         base seconds between attempts
   --stall-timeout S         kill a derive that reports no progress for S seconds
-  --tcrs-command NAME       derive (default) or introspect, per your jar
   --skip-warmup             do not populate the shared data template
   --keep-workdirs           keep per-JVM work dirs for forensics
   --promote MODE            success | always | never (default success)
@@ -61,7 +60,6 @@ const options = {
 	"max-attempts": { type: "string" },
 	"retry-backoff": { type: "string" },
 	"stall-timeout": { type: "string" },
-	"tcrs-command": { type: "string" },
 	"skip-warmup": { type: "boolean" },
 	"keep-workdirs": { type: "boolean" },
 	promote: { type: "string" },

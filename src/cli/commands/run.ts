@@ -7,7 +7,7 @@
 
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
-import { list, resolveBatchConfig, tcrsCommandFrom } from "#core/config.server";
+import { list, resolveBatchConfig } from "#core/config.server";
 import { loadSecrets } from "#core/env.server";
 import { ensureJar, JarUnavailableError } from "#core/jar.server";
 import { acquireLock, type Lock, LockHeldError } from "#core/lock.server";
@@ -196,17 +196,6 @@ export function buildConfig(flags: CliFlags): BatchConfig {
 	if (flags["stall-timeout"]) {
 		overrides.stallTimeoutMs =
 			flagNum("stall-timeout", flags["stall-timeout"]) * 1000;
-	}
-	if (flags["tcrs-command"]) {
-		const name = flags["tcrs-command"];
-		// Rejected rather than defaulted: silently deriving after being asked to
-		// introspect would look like the flag worked.
-		if (name !== "derive" && name !== "introspect") {
-			throw new InvalidFlagError(
-				`--tcrs-command expects derive or introspect, got "${name}"`,
-			);
-		}
-		overrides.tcrsCommand = tcrsCommandFrom(name);
 	}
 	if (flags["skip-warmup"]) overrides.skipWarmup = true;
 	if (flags["keep-workdirs"]) overrides.keepWorkdirs = true;

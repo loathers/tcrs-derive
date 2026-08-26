@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+	detectTcrsCommand,
 	ensureJar,
 	JarUnavailableError,
 	readJarTag,
@@ -198,6 +199,55 @@ describe("checking for a newer KoLmafia", () => {
 
 		await expect(
 			updateJar({ current, dir: join(dir, "mafia") }),
+		).rejects.toThrow();
+	});
+});
+
+/**
+ * Which command performs the full run is a property of the jar, not a setting.
+ *
+ * r29189 and earlier: `tcrs derive` runs all three phases. Later builds rename that
+ * to `tcrs introspect` and give `derive` a narrower job, introspecting only items
+ * missing from items.txt. Sending the wrong one either fails outright or quietly
+ * produces a different dataset, and since runs now fetch their own jars, nobody is
+ * around to choose.
+ *
+ * A jar is a zip and zip stores entry NAMES uncompressed, so the inner class name is
+ * readable without unzipping anything. These fixtures stand in for that byte.
+ */
+describe("detecting the jar's tcrs command", () => {
+	function fakeJar(marker: string): string {
+		const path = join(tmp(), "KoLmafia.jar");
+		writeFileSync(path, `PK\u0003\u0004...net/...${marker}.class...junk`);
+		return path;
+	}
+
+	it("picks introspect when the jar has the introspect runnable", async () => {
+		expect(await detectTcrsCommand(fakeJar("TCRSIntrospectRunnable"))).toEqual({
+			command: "introspect",
+			recognised: true,
+		});
+	});
+
+	it("picks derive when the jar has the derive runnable", async () => {
+		expect(await detectTcrsCommand(fakeJar("TCRSDeriveRunnable"))).toEqual({
+			command: "derive",
+			recognised: true,
+		});
+	});
+
+	it("falls back to derive, and says so, when neither marker is there", async () => {
+		// A future reorganisation lands here. derive is the one every released jar
+		// has had, and a run that fails loudly beats a quietly partial dataset.
+		expect(await detectTcrsCommand(fakeJar("TCRSSomethingElse"))).toEqual({
+			command: "derive",
+			recognised: false,
+		});
+	});
+
+	it("throws when the jar cannot be read", async () => {
+		await expect(
+			detectTcrsCommand("/nonexistent/KoLmafia.jar"),
 		).rejects.toThrow();
 	});
 });

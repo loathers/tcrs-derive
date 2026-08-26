@@ -22,6 +22,7 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
+import type { TcrsCommand } from "./runOne.server.ts";
 
 const RELEASES = "https://api.github.com/repos/kolmafia/kolmafia/releases";
 
@@ -231,4 +232,48 @@ export async function updateJar(o: {
 	await downloadJar(asset.url, dest);
 	await writeFile(`${dest}.tag`, asset.tag);
 	return { path: absolute(dest), tag: asset.tag, downloaded: true };
+}
+
+/**
+ * Markers for the class that runs a full three-phase pass.
+ *
+ * A jar is a zip, and zip stores entry NAMES uncompressed, so the inner class name
+ * is readable straight out of the file with no unzip and no JVM. Each appears twice,
+ * once in the local header and once in the central directory.
+ */
+const INTROSPECT_MARKER = "TCRSIntrospectRunnable";
+const DERIVE_MARKER = "TCRSDeriveRunnable";
+
+export interface TcrsCommandProbe {
+	command: TcrsCommand;
+	/**
+	 * False when neither marker was found, which means the jar reorganised again and
+	 * `command` is a guess. Worth surfacing rather than silently deriving.
+	 */
+	recognised: boolean;
+}
+
+/**
+ * Work out which command performs the full run for a given jar.
+ *
+ * r29189 and earlier: `tcrs derive` is the full pass. Later builds rename it to
+ * `tcrs introspect` and give `derive` a NARROWER job, introspecting only the items
+ * missing from items.txt. Sending the wrong one either fails outright, on an old
+ * jar, or quietly produces a different dataset, on a new one, so it cannot be a
+ * fixed default once runs fetch their own jars.
+ *
+ * Falls back to `derive` when neither marker is present: it is the one every jar
+ * released so far has, and a failed run beats a silently partial dataset.
+ */
+export async function detectTcrsCommand(
+	jarPath: string,
+): Promise<TcrsCommandProbe> {
+	const bytes = await readFile(jarPath);
+	if (bytes.includes(INTROSPECT_MARKER)) {
+		return { command: "introspect", recognised: true };
+	}
+	if (bytes.includes(DERIVE_MARKER)) {
+		return { command: "derive", recognised: true };
+	}
+	return { command: "derive", recognised: false };
 }

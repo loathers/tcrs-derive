@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { EventBus } from "./bus.ts";
 import type { SecretStore } from "./env.server.ts";
 import type { RunEvent, RunEventInit } from "./events.ts";
+import { detectTcrsCommand } from "./jar.server.ts";
 import { LogSink } from "./logSink.server.ts";
 import {
 	ALL_PERMUTATIONS,
@@ -37,8 +38,6 @@ import { warmUp } from "./warmup.server.ts";
 
 export interface BatchConfig {
 	jarPath: string;
-	/** Which mafia command derives the data. Defaults to `derive`. */
-	tcrsCommand?: TcrsCommand | undefined;
 	/**
 	 * Optional per-run check for a newer KoLmafia, awaited before the warm-up.
 	 * Returns the jar to use, or null to keep the current one.
@@ -246,6 +245,33 @@ async function execute(
 		}
 	}
 
+	// --- Which command does the full run ------------------------------------
+	// Jar-dependent, and the jar may have just changed above. r29189 and earlier use
+	// `derive`; later builds rename it to `introspect` and give `derive` a narrower
+	// job, so a fixed default would be wrong for one jar or the other.
+	let tcrsCommand: TcrsCommand | undefined;
+	if (todo.length > 0 && !signal.aborted) {
+		try {
+			const probe = await detectTcrsCommand(jarPath);
+			tcrsCommand = probe.command;
+			if (!probe.recognised) {
+				emit({
+					type: "warn",
+					user: null,
+					message: `could not tell which tcrs command ${jarPath} wants, using ${probe.command}`,
+				});
+			}
+		} catch (e) {
+			emit({
+				type: "warn",
+				user: null,
+				message: `could not read ${jarPath}: ${
+					e instanceof Error ? e.message : String(e)
+				}`,
+			});
+		}
+	}
+
 	// --- Warm-up -----------------------------------------------------------
 	let templateDir: string | null = null;
 	if (!cfg.skipWarmup && todo.length > 0 && !signal.aborted) {
@@ -281,7 +307,7 @@ async function execute(
 				permutation: p,
 				password: secrets.passwordFor(p),
 				jarPath,
-				...(cfg.tcrsCommand ? { tcrsCommand: cfg.tcrsCommand } : {}),
+				...(tcrsCommand ? { tcrsCommand } : {}),
 				javaBin: cfg.javaBin,
 				...(cfg.javaOpts ? { javaOpts: cfg.javaOpts } : {}),
 				workDir: join(cfg.dataDir, "work", p.user),

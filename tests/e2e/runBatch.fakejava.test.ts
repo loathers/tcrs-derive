@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -65,6 +65,72 @@ function config(dataDir: string, over: Partial<BatchConfig> = {}): BatchConfig {
 		...over,
 	};
 }
+
+describe("choosing the tcrs command from the jar", () => {
+	/** Stands in for a real jar: detection only reads bytes, never unzips. */
+	function fakeJar(dir: string, marker: string): string {
+		const path = join(dir, "KoLmafia.jar");
+		writeFileSync(path, `PK...${marker}.class...`);
+		return path;
+	}
+
+	it("sends introspect when the jar is a build that renamed it", async () => {
+		const data = tmp();
+		const handle = startBatch(
+			config(data, {
+				only: ["at_blender"],
+				jarPath: fakeJar(data, "TCRSIntrospectRunnable"),
+				keepWorkdirs: true,
+			}),
+			allSecrets,
+		);
+		await handle.result;
+
+		const sent = readFileSync(
+			join(data, "work", "at_blender", "stdin-received.txt"),
+			"utf8",
+		);
+		expect(sent).toContain("tcrs introspect");
+		expect(sent).not.toContain("tcrs derive");
+	}, 60_000);
+
+	it("sends derive when the jar is an older build", async () => {
+		const data = tmp();
+		const handle = startBatch(
+			config(data, {
+				only: ["at_blender"],
+				jarPath: fakeJar(data, "TCRSDeriveRunnable"),
+				keepWorkdirs: true,
+			}),
+			allSecrets,
+		);
+		await handle.result;
+
+		const sent = readFileSync(
+			join(data, "work", "at_blender", "stdin-received.txt"),
+			"utf8",
+		);
+		expect(sent).toContain("tcrs derive");
+		expect(sent).not.toContain("tcrs introspect");
+	}, 60_000);
+
+	it("warns and still runs when the jar cannot be read", async () => {
+		// An unreadable jar is not a reason to abandon the batch: fake-java ignores
+		// the path anyway, and a real one would fail at spawn with a clearer error.
+		const warnings: string[] = [];
+		const handle = startBatch(
+			config(tmp(), { only: ["at_blender"], jarPath: "/nonexistent/x.jar" }),
+			allSecrets,
+		);
+		handle.onEvent((e) => {
+			if (e.type === "warn") warnings.push(e.message);
+		});
+		const result = await handle.result;
+
+		expect(warnings.some((w) => w.includes("/nonexistent/x.jar"))).toBe(true);
+		expect(result.ok).toBe(1);
+	}, 60_000);
+});
 
 describe("the per-run KoLmafia check", () => {
 	it("runs before any JVM is spawned, and swaps the jar it hands them", async () => {
