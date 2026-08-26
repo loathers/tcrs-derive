@@ -14,8 +14,10 @@ export function Header({
         TCRS data
       </h1>
       <p>
-        KoLmafia TCRS item modifiers for all {permutationCount} class &times;
-        sign combinations.
+        Real TCRS item modifiers for KoLmafia, read straight off the live KoL
+        server. Covering all {permutationCount} class/seed combinations takes an
+        army of multis with one parked in each. Thanks to threebullethamburgler
+        (#1993636) for setting up those multis.
       </p>
       {connection === "polling" && (
         <p className="muted small">Live updates blocked. Polling every 5s.</p>
