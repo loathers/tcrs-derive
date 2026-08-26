@@ -14,38 +14,40 @@ import { createWriteStream, type WriteStream } from "node:fs";
 import { join } from "node:path";
 
 export class LogSink {
-  #streams = new Map<string, WriteStream>();
+	#streams = new Map<string, WriteStream>();
 
-  readonly #dir: string;
+	readonly #dir: string;
 
-  constructor(dir: string) {
-    this.#dir = dir;
-  }
+	constructor(dir: string) {
+		this.#dir = dir;
+	}
 
-  write(user: string, chunk: string): void {
-    let stream = this.#streams.get(user);
-    if (!stream) {
-      stream = createWriteStream(join(this.#dir, `${user}.log`), { flags: "a" });
-      // A log write failing must never take down a run.
-      stream.on("error", () => {});
-      this.#streams.set(user, stream);
-    }
-    stream.write(chunk);
-  }
+	write(user: string, chunk: string): void {
+		let stream = this.#streams.get(user);
+		if (!stream) {
+			stream = createWriteStream(join(this.#dir, `${user}.log`), {
+				flags: "a",
+			});
+			// A log write failing must never take down a run.
+			stream.on("error", () => {});
+			this.#streams.set(user, stream);
+		}
+		stream.write(chunk);
+	}
 
-  /** Mark an attempt boundary, so a retried permutation's log stays readable. */
-  markAttempt(user: string, attempt: number, maxAttempts: number): void {
-    this.write(user, `\n=== attempt ${attempt}/${maxAttempts} ===\n`);
-  }
+	/** Mark an attempt boundary, so a retried permutation's log stays readable. */
+	markAttempt(user: string, attempt: number, maxAttempts: number): void {
+		this.write(user, `\n=== attempt ${attempt}/${maxAttempts} ===\n`);
+	}
 
-  async close(): Promise<void> {
-    const closing = [...this.#streams.values()].map(
-      (s) =>
-        new Promise<void>((resolve) => {
-          s.end(() => resolve());
-        }),
-    );
-    this.#streams.clear();
-    await Promise.all(closing);
-  }
+	async close(): Promise<void> {
+		const closing = [...this.#streams.values()].map(
+			(s) =>
+				new Promise<void>((resolve) => {
+					s.end(() => resolve());
+				}),
+		);
+		this.#streams.clear();
+		await Promise.all(closing);
+	}
 }

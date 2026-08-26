@@ -10,9 +10,9 @@
 import type { Tone } from "#core/present";
 
 export const TONE_COLOR = {
-  idle: "gray",
-  active: "cyan",
-  ok: "green",
-  fail: "red",
-  warn: "yellow",
+	idle: "gray",
+	active: "cyan",
+	ok: "green",
+	fail: "red",
+	warn: "yellow",
 } as const satisfies Record<Tone, string>;

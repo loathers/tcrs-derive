@@ -17,9 +17,9 @@ const ServerNowContext = createContext<string | null>(null);
 export const ServerNowProvider = ServerNowContext.Provider;
 
 export function useServerNowIso(): string {
-  const iso = useContext(ServerNowContext);
-  if (iso === null) {
-    throw new Error("useServerNowIso used outside a ServerNowProvider");
-  }
-  return iso;
+	const iso = useContext(ServerNowContext);
+	if (iso === null) {
+		throw new Error("useServerNowIso used outside a ServerNowProvider");
+	}
+	return iso;
 }

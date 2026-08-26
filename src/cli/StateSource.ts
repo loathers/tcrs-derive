@@ -6,39 +6,40 @@
  */
 
 import type { RunEvent } from "#core/events";
-import { initialRunState, reduceRunState, type RunState } from "#core/state";
+import { initialRunState, type RunState, reduceRunState } from "#core/state";
 
 const EMPTY_RUN = { runId: "", concurrency: 0, maxAttempts: 0 } as const;
+
 import type { RunHandle } from "#core/runBatch.server";
 
 export type Connection = "local" | "connecting" | "open" | "lost";
 
 export interface StateSource {
-  readonly initial: RunState;
-  subscribe(cb: (s: RunState) => void): () => void;
-  cancel?: (() => void) | undefined;
-  readonly result?: Promise<unknown> | undefined;
-  readonly connection?: Connection;
+	readonly initial: RunState;
+	subscribe(cb: (s: RunState) => void): () => void;
+	cancel?: (() => void) | undefined;
+	readonly result?: Promise<unknown> | undefined;
+	readonly connection?: Connection;
 }
 
 /** Drive the UI from an in-process batch. */
 export function localSource(handle: RunHandle): StateSource {
-  return {
-    initial: handle.state,
-    subscribe(cb) {
-      return handle.onEvent(() => cb(handle.state));
-    },
-    cancel: () => handle.cancel(),
-    result: handle.result,
-    connection: "local",
-  };
+	return {
+		initial: handle.state,
+		subscribe(cb) {
+			return handle.onEvent(() => cb(handle.state));
+		},
+		cancel: () => handle.cancel(),
+		result: handle.result,
+		connection: "local",
+	};
 }
 
 export interface RemoteSourceOptions {
-  baseUrl: string;
-  signal?: AbortSignal;
-  /** Injectable for tests. */
-  fetchImpl?: typeof fetch;
+	baseUrl: string;
+	signal?: AbortSignal;
+	/** Injectable for tests. */
+	fetchImpl?: typeof fetch;
 }
 
 /**
@@ -48,91 +49,92 @@ export interface RemoteSourceOptions {
  * reconnect, is correct immediately without any replay buffer on the server.
  */
 export function remoteSource(o: RemoteSourceOptions): StateSource & {
-  start(): Promise<void>;
+	start(): Promise<void>;
 } {
-  let state: RunState | null = null;
-  let connection: Connection = "connecting";
-  const listeners = new Set<(s: RunState) => void>();
-  const doFetch = o.fetchImpl ?? fetch;
+	let state: RunState | null = null;
+	let connection: Connection = "connecting";
+	const listeners = new Set<(s: RunState) => void>();
+	const doFetch = o.fetchImpl ?? fetch;
 
-  const emit = () => {
-    if (state !== null) for (const l of listeners) l(state);
-  };
+	const emit = () => {
+		if (state !== null) for (const l of listeners) l(state);
+	};
 
-  async function start(): Promise<void> {
-    while (!o.signal?.aborted) {
-      try {
-        const res = await doFetch(`${o.baseUrl}/api/events`, {
-          headers: { accept: "text/event-stream" },
-          ...(o.signal ? { signal: o.signal } : {}),
-        });
-        if (!res.ok || res.body === null) throw new Error(`HTTP ${res.status}`);
-        connection = "open";
+	async function start(): Promise<void> {
+		while (!o.signal?.aborted) {
+			try {
+				const res = await doFetch(`${o.baseUrl}/api/events`, {
+					headers: { accept: "text/event-stream" },
+					...(o.signal ? { signal: o.signal } : {}),
+				});
+				if (!res.ok || res.body === null) throw new Error(`HTTP ${res.status}`);
+				connection = "open";
 
-        for await (const frame of sseFrames(res.body)) {
-          const payload = JSON.parse(frame) as
-            | { type: "snapshot"; state: RunState }
-            | { type: "patch"; event: RunEvent }
-            | { type: string };
+				for await (const frame of sseFrames(res.body)) {
+					const payload = JSON.parse(frame) as
+						| { type: "snapshot"; state: RunState }
+						| { type: "patch"; event: RunEvent }
+						| { type: string };
 
-          if (payload.type === "snapshot" && "state" in payload) {
-            state = payload.state;
-            emit();
-          } else if (payload.type === "patch" && "event" in payload) {
-            if (state !== null) {
-              state = reduceRunState(state, payload.event);
-              emit();
-            }
-          }
-        }
-      } catch {
-        // fall through to reconnect
-      }
-      if (o.signal?.aborted) break;
-      connection = "lost";
-      emit();
-      await new Promise((r) => setTimeout(r, 3000));
-      connection = "connecting";
-    }
-  }
+					if (payload.type === "snapshot" && "state" in payload) {
+						state = payload.state;
+						emit();
+					} else if (payload.type === "patch" && "event" in payload) {
+						if (state !== null) {
+							state = reduceRunState(state, payload.event);
+							emit();
+						}
+					}
+				}
+			} catch {
+				// fall through to reconnect
+			}
+			if (o.signal?.aborted) break;
+			connection = "lost";
+			emit();
+			await new Promise((r) => setTimeout(r, 3000));
+			connection = "connecting";
+		}
+	}
 
-  return {
-    get initial() {
-      // The real constructor, so a new RunState field cannot be forgotten here.
-      return state ?? initialRunState([], EMPTY_RUN);
-    },
-    subscribe(cb) {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
-    },
-    get connection() {
-      return connection;
-    },
-    start,
-  };
+	return {
+		get initial() {
+			// The real constructor, so a new RunState field cannot be forgotten here.
+			return state ?? initialRunState([], EMPTY_RUN);
+		},
+		subscribe(cb) {
+			listeners.add(cb);
+			return () => listeners.delete(cb);
+		},
+		get connection() {
+			return connection;
+		},
+		start,
+	};
 }
 
 /** Split a byte stream into SSE `data:` payloads. */
 async function* sseFrames(
-  body: ReadableStream<Uint8Array>,
+	body: ReadableStream<Uint8Array>,
 ): AsyncGenerator<string> {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) return;
-    buffer += decoder.decode(value, { stream: true });
-    let idx: number;
-    while ((idx = buffer.indexOf("\n\n")) !== -1) {
-      const block = buffer.slice(0, idx);
-      buffer = buffer.slice(idx + 2);
-      const data = block
-        .split("\n")
-        .filter((l) => l.startsWith("data:"))
-        .map((l) => l.slice(5).trim())
-        .join("\n");
-      if (data !== "") yield data;
-    }
-  }
+	const reader = body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = "";
+	for (;;) {
+		const { done, value } = await reader.read();
+		if (done) return;
+		buffer += decoder.decode(value, { stream: true });
+		for (;;) {
+			const idx = buffer.indexOf("\n\n");
+			if (idx === -1) break;
+			const block = buffer.slice(0, idx);
+			buffer = buffer.slice(idx + 2);
+			const data = block
+				.split("\n")
+				.filter((l) => l.startsWith("data:"))
+				.map((l) => l.slice(5).trim())
+				.join("\n");
+			if (data !== "") yield data;
+		}
+	}
 }

@@ -19,26 +19,26 @@
 
 import { createHash } from "node:crypto";
 import {
-  copyFile,
-  mkdir,
-  readFile,
-  readdir,
-  realpath,
-  rename,
-  rm,
-  stat,
-  symlink,
-  unlink,
-  writeFile,
+	copyFile,
+	mkdir,
+	readdir,
+	readFile,
+	realpath,
+	rename,
+	rm,
+	stat,
+	symlink,
+	unlink,
+	writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
 import type { FailureReason } from "./events.ts";
-import { buildZip } from "./zip.server.ts";
 import {
-  ALL_FILE_NAMES,
-  permutationForFile,
-  type FileKind,
+	ALL_FILE_NAMES,
+	type FileKind,
+	permutationForFile,
 } from "./permutations.ts";
+import { buildZip } from "./zip.server.ts";
 
 export const CURRENT_LINK = "current";
 export const RUNS_DIR = "runs";
@@ -48,82 +48,82 @@ export const ZIP_NAME = "tcrs-data.zip";
 export const SUMS_NAME = "SHA256SUMS.txt";
 
 export type RunOutcome =
-  | "success"
-  | "partial"
-  | "failed"
-  | "aborted"
-  | "aborted-early";
+	| "success"
+	| "partial"
+	| "failed"
+	| "aborted"
+	| "aborted-early";
 
 export interface PermutationResult {
-  user: string;
-  ok: boolean;
-  attempts: number;
-  filesCopied: number;
-  durationMs: number;
-  itemsDone: number;
-  itemsTotal: number;
-  reason?: FailureReason;
+	user: string;
+	ok: boolean;
+	attempts: number;
+	filesCopied: number;
+	durationMs: number;
+	itemsDone: number;
+	itemsTotal: number;
+	reason?: FailureReason;
 }
 
 export interface ManifestEntry {
-  name: string;
-  user: string;
-  kind: FileKind;
-  bytes: number;
-  sha256: string;
-  /** Differs from the manifest's own id when carried forward from an older run. */
-  sourceRunId: string;
+	name: string;
+	user: string;
+	kind: FileKind;
+	bytes: number;
+	sha256: string;
+	/** Differs from the manifest's own id when carried forward from an older run. */
+	sourceRunId: string;
 }
 
 export interface RunManifest {
-  version: 1;
-  id: string;
-  startedAt: string;
-  finishedAt: string | null;
-  outcome: RunOutcome | null;
-  durationMs: number | null;
-  concurrency: number;
-  mafiaBuild: string | null;
-  /**
-   * Describes the PUBLISHED DATASET, not just this run -- the same mix of runs
-   * ManifestEntry.sourceRunId records per file -- with one deliberate asymmetry.
-   *
-   * A permutation this run never attempted keeps the result of the run that
-   * derived its carried files. A permutation this run attempted AND FAILED keeps
-   * its own failed result even though its files were carried, so the manifest
-   * reports filesCopied: 0 against three entries that are present.
-   *
-   * That asymmetry is what resumableUsers wants: ok: false there makes the next
-   * --resume re-derive a permutation whose only files are stale, rather than
-   * adopting them as this run's work.
-   */
-  results: PermutationResult[];
-  entries: ManifestEntry[];
-  zip: { name: string; bytes: number; sha256: string } | null;
-  totalBytes: number;
+	version: 1;
+	id: string;
+	startedAt: string;
+	finishedAt: string | null;
+	outcome: RunOutcome | null;
+	durationMs: number | null;
+	concurrency: number;
+	mafiaBuild: string | null;
+	/**
+	 * Describes the PUBLISHED DATASET, not just this run -- the same mix of runs
+	 * ManifestEntry.sourceRunId records per file -- with one deliberate asymmetry.
+	 *
+	 * A permutation this run never attempted keeps the result of the run that
+	 * derived its carried files. A permutation this run attempted AND FAILED keeps
+	 * its own failed result even though its files were carried, so the manifest
+	 * reports filesCopied: 0 against three entries that are present.
+	 *
+	 * That asymmetry is what resumableUsers wants: ok: false there makes the next
+	 * --resume re-derive a permutation whose only files are stale, rather than
+	 * adopting them as this run's work.
+	 */
+	results: PermutationResult[];
+	entries: ManifestEntry[];
+	zip: { name: string; bytes: number; sha256: string } | null;
+	totalBytes: number;
 }
 
 export interface Staging {
-  runId: string;
-  dir: string;
-  dataDir: string;
-  logDir: string;
+	runId: string;
+	dir: string;
+	dataDir: string;
+	logDir: string;
 }
 
 export interface Paths {
-  root: string;
-  runs: string;
-  work: string;
-  current: string;
+	root: string;
+	runs: string;
+	work: string;
+	current: string;
 }
 
 export function paths(dataDir: string): Paths {
-  return {
-    root: dataDir,
-    runs: join(dataDir, RUNS_DIR),
-    work: join(dataDir, WORK_DIR),
-    current: join(dataDir, CURRENT_LINK),
-  };
+	return {
+		root: dataDir,
+		runs: join(dataDir, RUNS_DIR),
+		work: join(dataDir, WORK_DIR),
+		current: join(dataDir, CURRENT_LINK),
+	};
 }
 
 /**
@@ -132,53 +132,53 @@ export function paths(dataDir: string): Paths {
  * in the manifest.
  */
 export function runIdFor(date: Date): string {
-  return date.toISOString().replace(/[:.]/g, "-");
+	return date.toISOString().replace(/[:.]/g, "-");
 }
 
 export async function createStaging(
-  dataDir: string,
-  runId: string,
+	dataDir: string,
+	runId: string,
 ): Promise<Staging> {
-  const dir = join(dataDir, RUNS_DIR, runId);
-  const staging: Staging = {
-    runId,
-    dir,
-    dataDir: join(dir, "data"),
-    logDir: join(dir, "logs"),
-  };
-  await mkdir(staging.dataDir, { recursive: true });
-  await mkdir(staging.logDir, { recursive: true });
-  return staging;
+	const dir = join(dataDir, RUNS_DIR, runId);
+	const staging: Staging = {
+		runId,
+		dir,
+		dataDir: join(dir, "data"),
+		logDir: join(dir, "logs"),
+	};
+	await mkdir(staging.dataDir, { recursive: true });
+	await mkdir(staging.logDir, { recursive: true });
+	return staging;
 }
 
 export async function writeManifest(
-  staging: Staging,
-  manifest: RunManifest,
+	staging: Staging,
+	manifest: RunManifest,
 ): Promise<void> {
-  await writeAtomic(
-    join(staging.dir, MANIFEST_NAME),
-    JSON.stringify(manifest, null, 2),
-  );
+	await writeAtomic(
+		join(staging.dir, MANIFEST_NAME),
+		JSON.stringify(manifest, null, 2),
+	);
 }
 
 export async function readManifest(
-  runDir: string,
+	runDir: string,
 ): Promise<RunManifest | null> {
-  try {
-    const text = await readFile(join(runDir, MANIFEST_NAME), "utf8");
-    const parsed = JSON.parse(text) as RunManifest;
-    return parsed.version === 1 ? parsed : null;
-  } catch {
-    return null;
-  }
+	try {
+		const text = await readFile(join(runDir, MANIFEST_NAME), "utf8");
+		const parsed = JSON.parse(text) as RunManifest;
+		return parsed.version === 1 ? parsed : null;
+	} catch {
+		return null;
+	}
 }
 
 /** The manifest of the currently published run, or null if nothing is published. */
 export async function readCurrentManifest(
-  dataDir: string,
+	dataDir: string,
 ): Promise<RunManifest | null> {
-  const dir = await resolveCurrent(dataDir);
-  return dir === null ? null : readManifest(dir);
+	const dir = await resolveCurrent(dataDir);
+	return dir === null ? null : readManifest(dir);
 }
 
 /**
@@ -189,13 +189,13 @@ export async function readCurrentManifest(
  * directory is deleted.
  */
 export async function resolveCurrent(dataDir: string): Promise<string | null> {
-  try {
-    const resolved = await realpath(join(dataDir, CURRENT_LINK));
-    const st = await stat(resolved);
-    return st.isDirectory() ? resolved : null;
-  } catch {
-    return null;
-  }
+	try {
+		const resolved = await realpath(join(dataDir, CURRENT_LINK));
+		const st = await stat(resolved);
+		return st.isDirectory() ? resolved : null;
+	} catch {
+		return null;
+	}
 }
 
 /**
@@ -208,32 +208,32 @@ export async function resolveCurrent(dataDir: string): Promise<string | null> {
  * mounted at a different path (which matters in a container) without breaking.
  */
 export async function promote(dataDir: string, runId: string): Promise<void> {
-  const tmp = join(dataDir, `.${CURRENT_LINK}.tmp`);
-  await rm(tmp, { force: true });
-  await symlink(join(RUNS_DIR, runId), tmp);
-  await rename(tmp, join(dataDir, CURRENT_LINK));
+	const tmp = join(dataDir, `.${CURRENT_LINK}.tmp`);
+	await rm(tmp, { force: true });
+	await symlink(join(RUNS_DIR, runId), tmp);
+	await rename(tmp, join(dataDir, CURRENT_LINK));
 }
 
 /** Delete every run directory except the ones named. */
 export async function pruneRuns(
-  dataDir: string,
-  keep: readonly string[],
+	dataDir: string,
+	keep: readonly string[],
 ): Promise<string[]> {
-  const keepSet = new Set(keep);
-  const runsDir = join(dataDir, RUNS_DIR);
-  let entries: string[];
-  try {
-    entries = await readdir(runsDir);
-  } catch {
-    return [];
-  }
-  const removed: string[] = [];
-  for (const name of entries) {
-    if (keepSet.has(name)) continue;
-    await rm(join(runsDir, name), { recursive: true, force: true });
-    removed.push(name);
-  }
-  return removed;
+	const keepSet = new Set(keep);
+	const runsDir = join(dataDir, RUNS_DIR);
+	let entries: string[];
+	try {
+		entries = await readdir(runsDir);
+	} catch {
+		return [];
+	}
+	const removed: string[] = [];
+	for (const name of entries) {
+		if (keepSet.has(name)) continue;
+		await rm(join(runsDir, name), { recursive: true, force: true });
+		removed.push(name);
+	}
+	return removed;
 }
 
 /**
@@ -245,125 +245,124 @@ export async function pruneRuns(
  * sourceRunId so the UI can mark it stale.
  */
 export async function carryForward(
-  staging: Staging,
-  previous: { dir: string; manifest: RunManifest } | null,
-  missing: readonly string[],
+	staging: Staging,
+	previous: { dir: string; manifest: RunManifest } | null,
+	missing: readonly string[],
 ): Promise<ManifestEntry[]> {
-  if (previous === null || missing.length === 0) return [];
-  const byName = new Map(previous.manifest.entries.map((e) => [e.name, e]));
-  const carried: ManifestEntry[] = [];
+	if (previous === null || missing.length === 0) return [];
+	const byName = new Map(previous.manifest.entries.map((e) => [e.name, e]));
+	const carried: ManifestEntry[] = [];
 
-  for (const name of missing) {
-    const entry = byName.get(name);
-    if (!entry) continue;
-    const src = join(previous.dir, "data", name);
-    try {
-      await copyFile(src, join(staging.dataDir, name));
-      carried.push({ ...entry });
-    } catch {
-      // The previous file is gone. The entry simply stays missing.
-    }
-  }
-  return carried;
+	for (const name of missing) {
+		const entry = byName.get(name);
+		if (!entry) continue;
+		const src = join(previous.dir, "data", name);
+		try {
+			await copyFile(src, join(staging.dataDir, name));
+			carried.push({ ...entry });
+		} catch {
+			// The previous file is gone. The entry simply stays missing.
+		}
+	}
+	return carried;
 }
 
 /** Hash and measure every published file, producing the manifest entries. */
 export async function indexFiles(
-  staging: Staging,
-  runId: string,
+	staging: Staging,
+	runId: string,
 ): Promise<ManifestEntry[]> {
-  const entries: ManifestEntry[] = [];
-  for (const name of ALL_FILE_NAMES) {
-    const meta = permutationForFile(name);
-    if (!meta) continue;
-    const path = join(staging.dataDir, name);
-    try {
-      const st = await stat(path);
-      if (!st.isFile() || st.size === 0) continue;
-      entries.push({
-        name,
-        user: meta.permutation.user,
-        kind: meta.kind,
-        bytes: st.size,
-        sha256: await sha256File(path),
-        sourceRunId: runId,
-      });
-    } catch {
-      // Not present in this run.
-    }
-  }
-  return entries;
+	const entries: ManifestEntry[] = [];
+	for (const name of ALL_FILE_NAMES) {
+		const meta = permutationForFile(name);
+		if (!meta) continue;
+		const path = join(staging.dataDir, name);
+		try {
+			const st = await stat(path);
+			if (!st.isFile() || st.size === 0) continue;
+			entries.push({
+				name,
+				user: meta.permutation.user,
+				kind: meta.kind,
+				bytes: st.size,
+				sha256: await sha256File(path),
+				sourceRunId: runId,
+			});
+		} catch {
+			// Not present in this run.
+		}
+	}
+	return entries;
 }
 
 export async function sha256File(path: string): Promise<string> {
-  // These files are ~950KB; reading whole is fine and keeps this dependency-free.
-  const buf = await readFile(path);
-  return createHash("sha256").update(buf).digest("hex");
+	// These files are ~950KB; reading whole is fine and keeps this dependency-free.
+	const buf = await readFile(path);
+	return createHash("sha256").update(buf).digest("hex");
 }
 
 /** Write SHA256SUMS.txt in the format `sha256sum -c` expects. */
 export async function writeSums(
-  staging: Staging,
-  entries: readonly ManifestEntry[],
+	staging: Staging,
+	entries: readonly ManifestEntry[],
 ): Promise<void> {
-  const body = entries
-    .map((e) => `${e.sha256}  ${e.name}`)
-    .sort()
-    .join("\n");
-  await writeAtomic(join(staging.dataDir, SUMS_NAME), body + "\n");
+	const body = entries
+		.map((e) => `${e.sha256}  ${e.name}`)
+		.sort()
+		.join("\n");
+	await writeAtomic(join(staging.dataDir, SUMS_NAME), `${body}\n`);
 }
 
 /** Write via a temp file plus rename, so a crash never leaves a torn file. */
 export async function writeAtomic(
-  path: string,
-  contents: string,
+	path: string,
+	contents: string,
 ): Promise<void> {
-  const tmp = `${path}.tmp`;
-  await writeFile(tmp, contents);
-  await rename(tmp, path);
+	const tmp = `${path}.tmp`;
+	await writeFile(tmp, contents);
+	await rename(tmp, path);
 }
 
 /** Remove per-JVM scratch trees. Each is a full mafia data tree, so this is real
  *  disk, the bash reclaimed it per permutation and we do it per run as well. */
 export async function clearWork(dataDir: string): Promise<void> {
-  const work = join(dataDir, WORK_DIR);
-  await rm(work, { recursive: true, force: true });
-  await mkdir(work, { recursive: true });
+	const work = join(dataDir, WORK_DIR);
+	await rm(work, { recursive: true, force: true });
+	await mkdir(work, { recursive: true });
 }
 
 /** Remove a stale `current` symlink (used by boot recovery). */
 export async function unlinkCurrent(dataDir: string): Promise<void> {
-  await unlink(join(dataDir, CURRENT_LINK)).catch(() => {});
+	await unlink(join(dataDir, CURRENT_LINK)).catch(() => {});
 }
 
-
 export interface PublishInput {
-  staging: Staging;
-  runId: string;
-  /**
-   * The entries the batch itself indexed, BEFORE any carry-forward. Passing them
-   * in rather than re-indexing here is not only cheaper (the dataset is ~50MB and
-   * would otherwise be read and hashed twice per publish): re-indexing after
-   * carryForward re-stamps the carried files with THIS run's id, which erased the
-   * only record that they came from an older one and left stalePermutations
-   * permanently empty.
-   */
-  entries: readonly ManifestEntry[];
-  /**
-   * This run's own results. Permutations it never attempted are filled in from the
-   * previous run alongside their files, so a partial run does not erase them.
-   */
-  results: readonly PermutationResult[];
-  mafiaBuild: string | null;
-  concurrency: number;
-  startedAt: number;
-  finishedAt: number;
-  outcome: "success" | "partial";
+	staging: Staging;
+	runId: string;
+	/**
+	 * The entries the batch itself indexed, BEFORE any carry-forward. Passing them
+	 * in rather than re-indexing here is not only cheaper (the dataset is ~50MB and
+	 * would otherwise be read and hashed twice per publish): re-indexing after
+	 * carryForward re-stamps the carried files with THIS run's id, which erased the
+	 * only record that they came from an older one and left stalePermutations
+	 * permanently empty.
+	 */
+	entries: readonly ManifestEntry[];
+	/**
+	 * This run's own results. Permutations it never attempted are filled in from the
+	 * previous run alongside their files, so a partial run does not erase them.
+	 */
+	results: readonly PermutationResult[];
+	mafiaBuild: string | null;
+	concurrency: number;
+	startedAt: number;
+	finishedAt: number;
+	outcome: "success" | "partial";
 }
 
 export interface PublishResult {
-  manifest: RunManifest;
-  carried: ManifestEntry[];
+	manifest: RunManifest;
+	carried: ManifestEntry[];
 }
 
 /**
@@ -380,70 +379,70 @@ export interface PublishResult {
  * call sites.
  */
 export async function publishRun(
-  dataDir: string,
-  input: PublishInput,
+	dataDir: string,
+	input: PublishInput,
 ): Promise<PublishResult> {
-  const previousDir = await resolveCurrent(dataDir);
-  const previousManifest = previousDir ? await readManifest(previousDir) : null;
+	const previousDir = await resolveCurrent(dataDir);
+	const previousManifest = previousDir ? await readManifest(previousDir) : null;
 
-  // Every file the dataset should contain that this run did not produce, whether
-  // the permutation failed or was never selected. Derived here rather than passed
-  // in because a caller that scoped it to its own selection published a partial
-  // dataset and pruned the rest of it away.
-  const produced = new Set(input.entries.map((e) => e.name));
-  const missing = ALL_FILE_NAMES.filter((n) => !produced.has(n));
+	// Every file the dataset should contain that this run did not produce, whether
+	// the permutation failed or was never selected. Derived here rather than passed
+	// in because a caller that scoped it to its own selection published a partial
+	// dataset and pruned the rest of it away.
+	const produced = new Set(input.entries.map((e) => e.name));
+	const missing = ALL_FILE_NAMES.filter((n) => !produced.has(n));
 
-  const carried =
-    previousDir && previousManifest
-      ? await carryForward(
-          input.staging,
-          { dir: previousDir, manifest: previousManifest },
-          missing,
-        )
-      : [];
+	const carried =
+		previousDir && previousManifest
+			? await carryForward(
+					input.staging,
+					{ dir: previousDir, manifest: previousManifest },
+					missing,
+				)
+			: [];
 
-  // Fresh wins; carried entries keep the sourceRunId of the run that derived them.
-  const byName = new Map(carried.map((e) => [e.name, e]));
-  for (const e of input.entries) byName.set(e.name, e);
-  const entries = [...byName.values()].sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
+	// Fresh wins; carried entries keep the sourceRunId of the run that derived them.
+	const byName = new Map(carried.map((e) => [e.name, e]));
+	for (const e of input.entries) byName.set(e.name, e);
+	const entries = [...byName.values()].sort((a, b) =>
+		a.name.localeCompare(b.name),
+	);
 
-  // Results follow their files. resumableUsers joins entries against results, so a
-  // permutation whose files were carried but whose result was dropped would look
-  // un-derived and be run again from scratch on the next --resume.
-  const carriedUsers = new Set(carried.map((e) => e.user));
-  const byUser = new Map(input.results.map((r) => [r.user, r]));
-  for (const r of previousManifest?.results ?? []) {
-    if (!byUser.has(r.user) && carriedUsers.has(r.user)) byUser.set(r.user, r);
-  }
-  const results = [...byUser.values()];
+	// Results follow their files. resumableUsers joins entries against results, so a
+	// permutation whose files were carried but whose result was dropped would look
+	// un-derived and be run again from scratch on the next --resume.
+	const carriedUsers = new Set(carried.map((e) => e.user));
+	const byUser = new Map(input.results.map((r) => [r.user, r]));
+	for (const r of previousManifest?.results ?? []) {
+		if (!byUser.has(r.user) && carriedUsers.has(r.user)) byUser.set(r.user, r);
+	}
+	const results = [...byUser.values()];
 
-  // After the merge, so the checksums cover carried files too.
-  await writeSums(input.staging, entries);
+	// After the merge, so the checksums cover carried files too.
+	await writeSums(input.staging, entries);
 
-  const zip = await buildZip(input.staging, entries).catch(() => null);
+	const zip = await buildZip(input.staging, entries).catch(() => null);
 
-  const manifest: RunManifest = {
-    version: 1,
-    id: input.runId,
-    startedAt: new Date(input.startedAt).toISOString(),
-    finishedAt: new Date(input.finishedAt).toISOString(),
-    outcome: input.outcome,
-    durationMs: input.finishedAt - input.startedAt,
-    concurrency: input.concurrency,
-    mafiaBuild: input.mafiaBuild,
-    results,
-    entries,
-    zip,
-    totalBytes: entries.reduce((n, e) => n + e.bytes, 0),
-  };
+	const manifest: RunManifest = {
+		version: 1,
+		id: input.runId,
+		startedAt: new Date(input.startedAt).toISOString(),
+		finishedAt: new Date(input.finishedAt).toISOString(),
+		outcome: input.outcome,
+		durationMs: input.finishedAt - input.startedAt,
+		concurrency: input.concurrency,
+		mafiaBuild: input.mafiaBuild,
+		results,
+		entries,
+		zip,
+		totalBytes: entries.reduce((n, e) => n + e.bytes, 0),
+	};
 
-  await writeManifest(input.staging, manifest);
-  await promote(dataDir, input.runId);
-  // Safe to delete the old dir immediately: an in-flight download holds an open
-  // fd, and POSIX keeps that inode alive.
-  await pruneRuns(dataDir, [input.runId]);
+	await writeManifest(input.staging, manifest);
+	await promote(dataDir, input.runId);
+	// Safe to delete the old dir immediately: an in-flight download holds an open
+	// fd, and POSIX keeps that inode alive.
+	await pruneRuns(dataDir, [input.runId]);
 
-  return { manifest, carried };
+	return { manifest, carried };
 }

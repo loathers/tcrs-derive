@@ -4,16 +4,16 @@ import { summaryLine } from "#core/present";
 import type { RunSummary } from "#core/state";
 
 export function OverallSummary({
-  summary,
-  suffix = "",
+	summary,
+	suffix = "",
 }: {
-  summary: RunSummary;
-  suffix?: string;
+	summary: RunSummary;
+	suffix?: string;
 }) {
-  return (
-    <Text bold>
-      {summaryLine(summary)}
-      {suffix}
-    </Text>
-  );
+	return (
+		<Text bold>
+			{summaryLine(summary)}
+			{suffix}
+		</Text>
+	);
 }

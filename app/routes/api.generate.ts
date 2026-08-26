@@ -13,36 +13,36 @@
 import type { Route } from "./+types/api.generate";
 
 export async function action({ request }: Route.ActionArgs) {
-  if (request.method !== "POST") {
-    return Response.json(
-      { accepted: false, error: "method_not_allowed" },
-      { status: 405, headers: { allow: "POST" } },
-    );
-  }
+	if (request.method !== "POST") {
+		return Response.json(
+			{ accepted: false, error: "method_not_allowed" },
+			{ status: 405, headers: { allow: "POST" } },
+		);
+	}
 
-  const { getRunManager } = await import("#server/singleton.server");
-  const manager = await getRunManager();
-  const result = manager.trigger();
+	const { getRunManager } = await import("#server/singleton.server");
+	const manager = await getRunManager();
+	const result = manager.trigger();
 
-  const status = result.accepted
-    ? 202
-    : result.error === "already_running"
-      ? 409
-      : result.error === "cooldown"
-        ? 429
-        : 503;
+	const status = result.accepted
+		? 202
+		: result.error === "already_running"
+			? 409
+			: result.error === "cooldown"
+				? 429
+				: 503;
 
-  const headers = new Headers({ "cache-control": "no-store" });
-  if (!result.accepted && result.error === "cooldown") {
-    headers.set("retry-after", String(Math.ceil(result.remainingMs / 1000)));
-  }
-  return Response.json(result, { status, headers });
+	const headers = new Headers({ "cache-control": "no-store" });
+	if (!result.accepted && result.error === "cooldown") {
+		headers.set("retry-after", String(Math.ceil(result.remainingMs / 1000)));
+	}
+	return Response.json(result, { status, headers });
 }
 
 /** A GET here is a mistake; say so rather than 404ing confusingly. */
 export function loader() {
-  return Response.json(
-    { error: "use POST to request a generation" },
-    { status: 405, headers: { allow: "POST" } },
-  );
+	return Response.json(
+		{ error: "use POST to request a generation" },
+		{ status: 405, headers: { allow: "POST" } },
+	);
 }

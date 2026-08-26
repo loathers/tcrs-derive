@@ -33,18 +33,18 @@ import type { Phase } from "./events.ts";
  *    across runs that all succeeded.
  */
 export const TRANSIENT_RE =
-  /connect timed out|connection timed out|read timed out|IOException retrieving server reply|Connection reset|Unable to (?:establish|connect)/i;
+	/connect timed out|connection timed out|read timed out|IOException retrieving server reply|Connection reset|Unable to (?:establish|connect)/i;
 
 /**
  * The account genuinely started deriving, login worked, don't kill it.
  * run-one.sh:43, applied case-sensitively.
  */
 export const STARTED_RE =
-  /Deriving TCRS item adjustments for all real items|Progress: /;
+	/Deriving TCRS item adjustments for all real items|Progress: /;
 
 /** Phase headers. Only the `real items` phase emits Progress: lines. */
 const PHASE_RE =
-  /Deriving TCRS item adjustments for all (real|cafe booze|cafe food) items/;
+	/Deriving TCRS item adjustments for all (real|cafe booze|cafe food) items/;
 
 /** `Progress: 4001/12070` */
 const PROGRESS_RE = /Progress: (\d+)\/(\d+)/;
@@ -69,19 +69,19 @@ const NOT_IN_TCRS_RE = /You are not in a Two Crazy Random Summer run/i;
 const BUILD_RE = /^KoLmafia (r\d+\S*)/;
 
 const PHASE_BY_LABEL: Record<string, Phase> = {
-  real: "items",
-  "cafe booze": "cafe_booze",
-  "cafe food": "cafe_food",
+	real: "items",
+	"cafe booze": "cafe_booze",
+	"cafe food": "cafe_food",
 };
 
 export type ParsedLine =
-  | { kind: "phase"; phase: Phase }
-  | { kind: "progress"; done: number; total: number }
-  | { kind: "transient"; marker: string }
-  | { kind: "wrote"; file: string; dir: string | null }
-  | { kind: "notInTcrs" }
-  | { kind: "build"; build: string }
-  | { kind: "other" };
+	| { kind: "phase"; phase: Phase }
+	| { kind: "progress"; done: number; total: number }
+	| { kind: "transient"; marker: string }
+	| { kind: "wrote"; file: string; dir: string | null }
+	| { kind: "notInTcrs" }
+	| { kind: "build"; build: string }
+	| { kind: "other" };
 
 /**
  * Classify one line of mafia output.
@@ -91,45 +91,48 @@ export type ParsedLine =
  * transient sweep.
  */
 export function classifyLine(line: string): ParsedLine {
-  const phase = PHASE_RE.exec(line);
-  if (phase) return { kind: "phase", phase: PHASE_BY_LABEL[phase[1]!]! };
+	const label = PHASE_RE.exec(line)?.[1];
+	const phase = label === undefined ? undefined : PHASE_BY_LABEL[label];
+	if (phase !== undefined) return { kind: "phase", phase };
 
-  const progress = PROGRESS_RE.exec(line);
-  if (progress) {
-    const done = Number(progress[1]);
-    const total = Number(progress[2]);
-    // A zero or absent total would make every percentage a division by zero;
-    // last_progress() rejected it the same way (common.sh:53).
-    if (Number.isFinite(done) && Number.isFinite(total) && total > 0) {
-      return { kind: "progress", done, total };
-    }
-    return { kind: "other" };
-  }
+	const progress = PROGRESS_RE.exec(line);
+	if (progress) {
+		const done = Number(progress[1]);
+		const total = Number(progress[2]);
+		// A zero or absent total would make every percentage a division by zero;
+		// last_progress() rejected it the same way (common.sh:53).
+		if (Number.isFinite(done) && Number.isFinite(total) && total > 0) {
+			return { kind: "progress", done, total };
+		}
+		return { kind: "other" };
+	}
 
-  const wrote = WROTE_RE.exec(line);
-  if (wrote) {
-    return { kind: "wrote", file: wrote[2]!, dir: wrote[1] ?? null };
-  }
+	const wrote = WROTE_RE.exec(line);
+	const wroteFile = wrote?.[2];
+	if (wroteFile !== undefined) {
+		return { kind: "wrote", file: wroteFile, dir: wrote?.[1] ?? null };
+	}
 
-  if (NOT_IN_TCRS_RE.test(line)) return { kind: "notInTcrs" };
+	if (NOT_IN_TCRS_RE.test(line)) return { kind: "notInTcrs" };
 
-  const build = BUILD_RE.exec(line);
-  if (build) return { kind: "build", build: build[1]! };
+	const build = BUILD_RE.exec(line)?.[1];
+	if (build !== undefined) return { kind: "build", build };
 
-  const transient = TRANSIENT_RE.exec(line);
-  if (transient) return { kind: "transient", marker: transient[0] };
+	const transient = TRANSIENT_RE.exec(line);
+	if (transient) return { kind: "transient", marker: transient[0] };
 
-  return { kind: "other" };
+	return { kind: "other" };
 }
 
 /** ANSI CSI escapes. Real logs contain none (jansi stays dumb on a non-tty), but a
  *  future mafia or a tty-ish environment could emit them. */
-const ANSI_RE = /\[[0-9;?]*[A-Za-z]/g;
+// biome-ignore lint/suspicious/noControlCharactersInRegex: ESC is the point here
+const ANSI_RE = /\u001B\[[0-9;?]*[A-Za-z]/g;
 
 function clean(line: string): string {
-  // NULs: mafia sometimes writes them, and they made bash's command substitution
-  // warn and corrupted the chart (common.sh:38-39).
-  return line.replace(/\0/g, "").replace(ANSI_RE, "").replace(/\r/g, "");
+	// NULs: mafia sometimes writes them, and they made bash's command substitution
+	// warn and corrupted the chart (common.sh:38-39).
+	return line.replace(/\0/g, "").replace(ANSI_RE, "").replace(/\r/g, "");
 }
 
 /**
@@ -139,25 +142,25 @@ function clean(line: string): string {
  * splice two half-lines into one nonsense line. We run one splitter per stream.
  */
 export class LineSplitter {
-  #pending = "";
+	#pending = "";
 
-  /** Feed a chunk; get back the complete lines it terminated. */
-  push(chunk: string): string[] {
-    this.#pending += chunk;
-    const parts = this.#pending.split("\n");
-    // The last element is an unterminated remainder, not a line.
-    this.#pending = parts.pop() ?? "";
-    return parts.map(clean);
-  }
+	/** Feed a chunk; get back the complete lines it terminated. */
+	push(chunk: string): string[] {
+		this.#pending += chunk;
+		const parts = this.#pending.split("\n");
+		// The last element is an unterminated remainder, not a line.
+		this.#pending = parts.pop() ?? "";
+		return parts.map(clean);
+	}
 
-  /** Flush the unterminated tail at EOF. mafia writes prompts without a trailing
-   *  newline (`username: password: `), so the tail can carry real content. */
-  flush(): string[] {
-    if (this.#pending === "") return [];
-    const tail = clean(this.#pending);
-    this.#pending = "";
-    return [tail];
-  }
+	/** Flush the unterminated tail at EOF. mafia writes prompts without a trailing
+	 *  newline (`username: password: `), so the tail can carry real content. */
+	flush(): string[] {
+		if (this.#pending === "") return [];
+		const tail = clean(this.#pending);
+		this.#pending = "";
+		return [tail];
+	}
 }
 
 /**
@@ -167,59 +170,59 @@ export class LineSplitter {
  * `=== attempt N/M ===` log marker and `current_attempt_block()` slicing.
  */
 export class DeriveTracker {
-  phase: Phase | null = null;
-  /** Progress for the CURRENT phase, reset on each phase change. */
-  progress: { done: number; total: number } | null = null;
-  /** Last progress seen during the `items` phase specifically. This, not the
-   *  current phase's progress, is what completeness is judged on, the bash scoped
-   *  it with `awk '/for all cafe/{exit}'` (run-one.sh:52). */
-  itemsProgress: { done: number; total: number } | null = null;
-  started = false;
-  sawTransient = false;
-  transientMarker: string | null = null;
-  notInTcrs = false;
-  build: string | null = null;
-  readonly wrote: string[] = [];
+	phase: Phase | null = null;
+	/** Progress for the CURRENT phase, reset on each phase change. */
+	progress: { done: number; total: number } | null = null;
+	/** Last progress seen during the `items` phase specifically. This, not the
+	 *  current phase's progress, is what completeness is judged on, the bash scoped
+	 *  it with `awk '/for all cafe/{exit}'` (run-one.sh:52). */
+	itemsProgress: { done: number; total: number } | null = null;
+	started = false;
+	sawTransient = false;
+	transientMarker: string | null = null;
+	notInTcrs = false;
+	build: string | null = null;
+	readonly wrote: string[] = [];
 
-  /** Apply one raw line. Returns its classification so callers can emit events. */
-  accept(line: string): ParsedLine {
-    const parsed = classifyLine(line);
-    switch (parsed.kind) {
-      case "phase":
-        this.phase = parsed.phase;
-        this.progress = null;
-        // Matches STARTED_RE's first alternative: the real-items header alone
-        // means login worked and deriving has begun.
-        if (parsed.phase === "items") this.started = true;
-        break;
-      case "progress":
-        this.progress = { done: parsed.done, total: parsed.total };
-        this.started = true;
-        // Only the items phase emits Progress:. A progress line seen before any
-        // phase header is attributed to items, since that is the only reporting
-        // phase and STARTED_RE treats it as the start of deriving.
-        if (this.phase === "items" || this.phase === null) {
-          this.itemsProgress = { done: parsed.done, total: parsed.total };
-        }
-        break;
-      case "transient":
-        this.sawTransient = true;
-        this.transientMarker ??= parsed.marker;
-        break;
-      case "wrote":
-        this.wrote.push(parsed.file);
-        break;
-      case "notInTcrs":
-        this.notInTcrs = true;
-        break;
-      case "build":
-        this.build ??= parsed.build;
-        break;
-      case "other":
-        break;
-    }
-    return parsed;
-  }
+	/** Apply one raw line. Returns its classification so callers can emit events. */
+	accept(line: string): ParsedLine {
+		const parsed = classifyLine(line);
+		switch (parsed.kind) {
+			case "phase":
+				this.phase = parsed.phase;
+				this.progress = null;
+				// Matches STARTED_RE's first alternative: the real-items header alone
+				// means login worked and deriving has begun.
+				if (parsed.phase === "items") this.started = true;
+				break;
+			case "progress":
+				this.progress = { done: parsed.done, total: parsed.total };
+				this.started = true;
+				// Only the items phase emits Progress:. A progress line seen before any
+				// phase header is attributed to items, since that is the only reporting
+				// phase and STARTED_RE treats it as the start of deriving.
+				if (this.phase === "items" || this.phase === null) {
+					this.itemsProgress = { done: parsed.done, total: parsed.total };
+				}
+				break;
+			case "transient":
+				this.sawTransient = true;
+				this.transientMarker ??= parsed.marker;
+				break;
+			case "wrote":
+				this.wrote.push(parsed.file);
+				break;
+			case "notInTcrs":
+				this.notInTcrs = true;
+				break;
+			case "build":
+				this.build ??= parsed.build;
+				break;
+			case "other":
+				break;
+		}
+		return parsed;
+	}
 }
 
 /** Default COMPLETE_TOLERANCE (run-one.sh:31). */
@@ -242,10 +245,10 @@ export const COMPLETE_TOLERANCE = 150;
  * be discarded, not accepted.
  */
 export function isDeriveComplete(
-  tracker: DeriveTracker,
-  tolerance = COMPLETE_TOLERANCE,
+	tracker: DeriveTracker,
+	tolerance = COMPLETE_TOLERANCE,
 ): boolean {
-  const p = tracker.itemsProgress;
-  if (!p) return false;
-  return p.done >= p.total - tolerance;
+	const p = tracker.itemsProgress;
+	if (!p) return false;
+	return p.done >= p.total - tolerance;
 }

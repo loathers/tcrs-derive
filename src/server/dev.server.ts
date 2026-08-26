@@ -7,7 +7,7 @@
  * reachable in production.
  */
 export function isDev(): boolean {
-  return process.env["NODE_ENV"] !== "production";
+	return process.env.NODE_ENV !== "production";
 }
 
 /**
@@ -17,5 +17,5 @@ export function isDev(): boolean {
  * capability exists at all.
  */
 export function requireDev(): void {
-  if (!isDev()) throw new Response("Not found", { status: 404 });
+	if (!isDev()) throw new Response("Not found", { status: 404 });
 }

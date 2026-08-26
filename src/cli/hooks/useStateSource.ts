@@ -10,27 +10,30 @@ import type { RunState } from "#core/state";
 import type { StateSource } from "../StateSource.ts";
 
 export function useStateSource(source: StateSource, fps = 10): RunState {
-  const [state, setState] = useState<RunState>(source.initial);
-  const latest = useRef<RunState>(source.initial);
+	const [state, setState] = useState<RunState>(source.initial);
+	const latest = useRef<RunState>(source.initial);
 
-  useEffect(() => {
-    const unsubscribe = source.subscribe((s) => {
-      latest.current = s;
-    });
-    const timer = setInterval(() => {
-      setState((current) =>
-        current === latest.current ? current : latest.current,
-      );
-    }, Math.round(1000 / fps));
+	useEffect(() => {
+		const unsubscribe = source.subscribe((s) => {
+			latest.current = s;
+		});
+		const timer = setInterval(
+			() => {
+				setState((current) =>
+					current === latest.current ? current : latest.current,
+				);
+			},
+			Math.round(1000 / fps),
+		);
 
-    return () => {
-      unsubscribe();
-      clearInterval(timer);
-      // No final flush here: React discards state updates on an unmounting
-      // component, so one would do nothing. What stays in scrollback is the
-      // summary runCommand prints from handle.state after waitUntilExit().
-    };
-  }, [source, fps]);
+		return () => {
+			unsubscribe();
+			clearInterval(timer);
+			// No final flush here: React discards state updates on an unmounting
+			// component, so one would do nothing. What stays in scrollback is the
+			// summary runCommand prints from handle.state after waitUntilExit().
+		};
+	}, [source, fps]);
 
-  return state;
+	return state;
 }

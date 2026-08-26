@@ -10,57 +10,60 @@
  * dangerous. Pinning to globalThis is the standard fix in this lineage.
  */
 
+import {
+	cooldownHoursFrom,
+	DEFAULTS,
+	resolveBatchConfig,
+} from "#core/config.server";
 import { loadSecrets } from "#core/env.server";
-import { cooldownHoursFrom, DEFAULTS, resolveBatchConfig } from "#core/config.server";
 import { RunManager } from "./run-manager.server.ts";
 import { Store } from "./store.server.ts";
 
 declare global {
-  // eslint-disable-next-line no-var
-  var __tcrsManager__: RunManager | undefined;
-  // eslint-disable-next-line no-var
-  var __tcrsManagerInit__: Promise<RunManager> | undefined;
+	var __tcrsManager__: RunManager | undefined;
+	var __tcrsManagerInit__: Promise<RunManager> | undefined;
 }
 
 function create(): RunManager {
-  const config = resolveBatchConfig();
-  const cooldown = cooldownHoursFrom();
-  const store = new Store(config.dataDir, {
-    successHours: cooldown.success,
-    failedHours: cooldown.failed,
-  });
-  // loadSecrets() copies PASSWORD_* out of process.env and DELETES them, so under
-  // Coolify (where they arrive as container env vars) no later crash dump or error
-  // serialiser can spill them.
-  const secrets = loadSecrets();
-  return new RunManager({
-    store,
-    config,
-    secrets,
-    minFreeBytes: DEFAULTS.minFreeBytes,
-  });
+	const config = resolveBatchConfig();
+	const cooldown = cooldownHoursFrom();
+	const store = new Store(config.dataDir, {
+		successHours: cooldown.success,
+		failedHours: cooldown.failed,
+	});
+	// loadSecrets() copies PASSWORD_* out of process.env and DELETES them, so under
+	// Coolify (where they arrive as container env vars) no later crash dump or error
+	// serialiser can spill them.
+	const secrets = loadSecrets();
+	return new RunManager({
+		store,
+		config,
+		secrets,
+		minFreeBytes: DEFAULTS.minFreeBytes,
+	});
 }
 
 /** Get the manager, initialising it exactly once per process. */
 export function getRunManager(): Promise<RunManager> {
-  globalThis.__tcrsManagerInit__ ??= (async () => {
-    const manager = (globalThis.__tcrsManager__ ??= create());
-    try {
-      await manager.init();
-    } catch (e) {
-      // Do NOT leave a permanently-rejected promise cached: a failed init (a held
-      // lock, a transient fs error) must be retryable rather than poisoning every
-      // later call for the life of the process.
-      globalThis.__tcrsManagerInit__ = undefined;
-      globalThis.__tcrsManager__ = undefined;
-      throw e;
-    }
-    return manager;
-  })();
-  return globalThis.__tcrsManagerInit__;
+	globalThis.__tcrsManagerInit__ ??= (async () => {
+		globalThis.__tcrsManager__ ??= create();
+		const manager = globalThis.__tcrsManager__;
+		try {
+			await manager.init();
+		} catch (e) {
+			// Do NOT leave a permanently-rejected promise cached: a failed init (a held
+			// lock, a transient fs error) must be retryable rather than poisoning every
+			// later call for the life of the process.
+			globalThis.__tcrsManagerInit__ = undefined;
+			globalThis.__tcrsManager__ = undefined;
+			throw e;
+		}
+		return manager;
+	})();
+	return globalThis.__tcrsManagerInit__;
 }
 
 /** The manager if it is already initialised, without triggering init. */
 export function peekRunManager(): RunManager | undefined {
-  return globalThis.__tcrsManager__;
+	return globalThis.__tcrsManager__;
 }

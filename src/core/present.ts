@@ -23,13 +23,13 @@ export const FILL_EMPTY = "░"; // light shade
 export type Tone = "idle" | "active" | "ok" | "fail" | "warn";
 
 export interface RowView {
-  readonly user: string;
-  /** 0-100. Caps near 99 for the items phase, see percentFor(). */
-  readonly pct: number;
-  readonly fill: string;
-  readonly bar: string;
-  readonly status: string;
-  readonly tone: Tone;
+	readonly user: string;
+	/** 0-100. Caps near 99 for the items phase, see percentFor(). */
+	readonly pct: number;
+	readonly fill: string;
+	readonly bar: string;
+	readonly status: string;
+	readonly tone: Tone;
 }
 
 /**
@@ -37,8 +37,8 @@ export interface RowView {
  * then pad with the empty glyph.
  */
 export function makeBar(pct: number, fill: string, width = BAR_WIDTH): string {
-  const filled = Math.min(width, Math.max(0, Math.floor((pct * width) / 100)));
-  return fill.repeat(filled) + FILL_EMPTY.repeat(width - filled);
+	const filled = Math.min(width, Math.max(0, Math.floor((pct * width) / 100)));
+	return fill.repeat(filled) + FILL_EMPTY.repeat(width - filled);
 }
 
 /**
@@ -50,8 +50,8 @@ export function makeBar(pct: number, fill: string, width = BAR_WIDTH): string {
  * cafe phases is a worse lie than 99%.
  */
 export function percentFor(progress: { done: number; total: number }): number {
-  if (progress.total <= 0) return 0;
-  return Math.floor((progress.done * 100) / progress.total);
+	if (progress.total <= 0) return 0;
+	return Math.floor((progress.done * 100) / progress.total);
 }
 
 /**
@@ -61,23 +61,23 @@ export function percentFor(progress: { done: number; total: number }): number {
  * 100% while the text read 99%.
  */
 export function progressPercent(p: PermState): number {
-  const s = p.status;
-  switch (s.kind) {
-    case "done":
-    case "failed":
-    case "skipped":
-      return 100;
-    case "queued":
-    case "login":
-    case "stalled":
-    case "retrying":
-      return 0;
-    case "deriving":
-      // The cafe phases report nothing and are the last sliver of the work, so
-      // they sit at the same near-complete number the items phase caps at.
-      if (s.phase !== "items") return CAFE_PERCENT;
-      return s.progress === null ? 0 : percentFor(s.progress);
-  }
+	const s = p.status;
+	switch (s.kind) {
+		case "done":
+		case "failed":
+		case "skipped":
+			return 100;
+		case "queued":
+		case "login":
+		case "stalled":
+		case "retrying":
+			return 0;
+		case "deriving":
+			// The cafe phases report nothing and are the last sliver of the work, so
+			// they sit at the same near-complete number the items phase caps at.
+			if (s.phase !== "items") return CAFE_PERCENT;
+			return s.progress === null ? 0 : percentFor(s.progress);
+	}
 }
 
 /** Where the cafe phases park. The items phase caps at 99 for the same reason:
@@ -86,13 +86,13 @@ const CAFE_PERCENT = 99;
 
 /** ` try 2/3`, or "" on the first attempt (run-all.sh:184-188). */
 function trySuffix(p: PermState): string {
-  return p.attempt > 1 ? ` try ${p.attempt}/${p.maxAttempts}` : "";
+	return p.attempt > 1 ? ` try ${p.attempt}/${p.maxAttempts}` : "";
 }
 
 const PHASE_LABEL = {
-  items: "items",
-  cafe_booze: "cafe booze",
-  cafe_food: "cafe food",
+	items: "items",
+	cafe_booze: "cafe booze",
+	cafe_food: "cafe food",
 } as const;
 
 /**
@@ -105,68 +105,74 @@ const PHASE_LABEL = {
  * than merely avoided.
  */
 export function rowView(p: PermState): RowView {
-  const t = trySuffix(p);
-  const s = p.status;
+	const t = trySuffix(p);
+	const s = p.status;
 
-  switch (s.kind) {
-    case "done":
-      return row(p, 100, FILL_ACTIVE, "done", "ok");
+	switch (s.kind) {
+		case "done":
+			return row(p, 100, FILL_ACTIVE, "done", "ok");
 
-    case "failed":
-      return row(p, 100, FILL_FAILED, `FAIL ${s.copied}/3`, "fail");
+		case "failed":
+			return row(p, 100, FILL_FAILED, `FAIL ${s.copied}/3`, "fail");
 
-    case "queued":
-      return row(p, 0, FILL_EMPTY, "queued", "idle");
+		case "queued":
+			return row(p, 0, FILL_EMPTY, "queued", "idle");
 
-    case "skipped":
-      return row(p, 100, FILL_EMPTY, "skipped", "idle");
+		case "skipped":
+			return row(p, 100, FILL_EMPTY, "skipped", "idle");
 
-    case "deriving": {
-      if (s.phase !== "items") {
-        // A full bar labelled with the phase, matching run-all.sh:194 byte for
-        // byte. The web cell shows a number instead and uses progressPercent(),
-        // which is why that is a separate derivation rather than this one.
-        return row(p, 100, FILL_ACTIVE, `${PHASE_LABEL[s.phase]}${t}`, "active");
-      }
-      // The items phase is the bulk and its percentage is meaningful. Before the
-      // first Progress: line it is legitimately 0, the bash defaulted pct=0 the
-      // same way (run-all.sh:180), so the bar starts empty rather than full.
-      const pct = s.progress === null ? 0 : percentFor(s.progress);
-      // run-all.sh:193, `printf '%3d%% items%s'`.
-      return row(
-        p,
-        pct,
-        FILL_ACTIVE,
-        `${String(pct).padStart(3)}% ${PHASE_LABEL[s.phase]}${t}`,
-        "active",
-      );
-    }
+		case "deriving": {
+			if (s.phase !== "items") {
+				// A full bar labelled with the phase, matching run-all.sh:194 byte for
+				// byte. The web cell shows a number instead and uses progressPercent(),
+				// which is why that is a separate derivation rather than this one.
+				return row(
+					p,
+					100,
+					FILL_ACTIVE,
+					`${PHASE_LABEL[s.phase]}${t}`,
+					"active",
+				);
+			}
+			// The items phase is the bulk and its percentage is meaningful. Before the
+			// first Progress: line it is legitimately 0, the bash defaulted pct=0 the
+			// same way (run-all.sh:180), so the bar starts empty rather than full.
+			const pct = s.progress === null ? 0 : percentFor(s.progress);
+			// run-all.sh:193, `printf '%3d%% items%s'`.
+			return row(
+				p,
+				pct,
+				FILL_ACTIVE,
+				`${String(pct).padStart(3)}% ${PHASE_LABEL[s.phase]}${t}`,
+				"active",
+			);
+		}
 
-    case "retrying":
-      return row(
-        p,
-        0,
-        FILL_ACTIVE,
-        `retrying ${s.nextAttempt}/${p.maxAttempts}`,
-        "warn",
-      );
+		case "retrying":
+			return row(
+				p,
+				0,
+				FILL_ACTIVE,
+				`retrying ${s.nextAttempt}/${p.maxAttempts}`,
+				"warn",
+			);
 
-    case "stalled":
-      return row(p, 0, FILL_ACTIVE, `stalled${t}`, "warn");
+		case "stalled":
+			return row(p, 0, FILL_ACTIVE, `stalled${t}`, "warn");
 
-    case "login":
-      return row(p, 0, FILL_ACTIVE, `login${t}`, "active");
-  }
+		case "login":
+			return row(p, 0, FILL_ACTIVE, `login${t}`, "active");
+	}
 }
 
 function row(
-  p: PermState,
-  pct: number,
-  fill: string,
-  status: string,
-  tone: Tone,
+	p: PermState,
+	pct: number,
+	fill: string,
+	status: string,
+	tone: Tone,
 ): RowView {
-  return { user: p.user, pct, fill, bar: makeBar(pct, fill), status, tone };
+	return { user: p.user, pct, fill, bar: makeBar(pct, fill), status, tone };
 }
 
 /**
@@ -178,25 +184,25 @@ function row(
  * part that was missing. Full detail stays in the cell's title/aria-label.
  */
 export function cellLabel(p: PermState): string {
-  const s = p.status;
-  switch (s.kind) {
-    case "queued":
-      return "";
-    case "skipped":
-      return "skip";
-    case "done":
-      return "100%";
-    case "failed":
-      return "fail";
-    case "retrying":
-      return "retry";
-    case "stalled":
-      return "stall";
-    case "login":
-      return "0%";
-    case "deriving":
-      return `${progressPercent(p)}%`;
-  }
+	const s = p.status;
+	switch (s.kind) {
+		case "queued":
+			return "";
+		case "skipped":
+			return "skip";
+		case "done":
+			return "100%";
+		case "failed":
+			return "fail";
+		case "retrying":
+			return "retry";
+		case "stalled":
+			return "stall";
+		case "login":
+			return "0%";
+		case "deriving":
+			return `${progressPercent(p)}%`;
+	}
 }
 
 /**
@@ -204,7 +210,7 @@ export function cellLabel(p: PermState): string {
  * padEnd(12) always pads, identical to printf's %-12s.
  */
 export function formatRow(v: RowView): string {
-  return `${v.user.padEnd(12)} [${v.bar}] ${v.status}`;
+	return `${v.user.padEnd(12)} [${v.bar}] ${v.status}`;
 }
 
 /**
@@ -212,6 +218,6 @@ export function formatRow(v: RowView): string {
  * string had them and the snapshot test pins them.
  */
 export function summaryLine(s: RunSummary): string {
-  const skipped = s.skipped > 0 ? `, ${s.skipped} skipped` : "";
-  return `Overall: ${s.done}/${s.total} done  (${s.running} running, ${s.failed} failed, ${s.queued} queued${skipped})`;
+	const skipped = s.skipped > 0 ? `, ${s.skipped} skipped` : "";
+	return `Overall: ${s.done}/${s.total} done  (${s.running} running, ${s.failed} failed, ${s.queued} queued${skipped})`;
 }

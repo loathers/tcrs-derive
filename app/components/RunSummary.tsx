@@ -1,7 +1,7 @@
 import { summaryLine } from "#core/present";
 import type { RunState } from "#core/state";
-import { formatDuration } from "../lib/format.ts";
 import { useServerClock } from "../hooks/useServerClock.ts";
+import { formatDuration } from "../lib/format.ts";
 import { useServerNowIso } from "../lib/server-now.ts";
 
 /**
@@ -15,22 +15,22 @@ import { useServerNowIso } from "../lib/server-now.ts";
  * renders identically on both sides.
  */
 export function RunSummary({ state }: { state: RunState }) {
-  const nowMs = useServerClock(useServerNowIso(), 1000);
+	const nowMs = useServerClock(useServerNowIso(), 1000);
 
-  const s = state.summary;
-  const elapsed =
-    nowMs === null || state.startedAt === null ? null : nowMs - state.startedAt;
-  // ETA from observed throughput. Meaningless until something has finished.
-  const eta =
-    elapsed !== null && s.done > 0 && s.done < s.total
-      ? (elapsed / s.done) * (s.total - s.done)
-      : null;
+	const s = state.summary;
+	const elapsed =
+		nowMs === null || state.startedAt === null ? null : nowMs - state.startedAt;
+	// ETA from observed throughput. Meaningless until something has finished.
+	const eta =
+		elapsed !== null && s.done > 0 && s.done < s.total
+			? (elapsed / s.done) * (s.total - s.done)
+			: null;
 
-  return (
-    <p aria-live="polite">
-      <strong>{summaryLine(s)}</strong>
-      {elapsed !== null && <>, {formatDuration(elapsed)} elapsed</>}
-      {eta !== null && <>, ~{formatDuration(eta)} left</>}
-    </p>
-  );
+	return (
+		<p aria-live="polite">
+			<strong>{summaryLine(s)}</strong>
+			{elapsed !== null && <>, {formatDuration(elapsed)} elapsed</>}
+			{eta !== null && <>, ~{formatDuration(eta)} left</>}
+		</p>
+	);
 }

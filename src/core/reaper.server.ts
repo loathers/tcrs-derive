@@ -18,43 +18,43 @@ const live = new Set<number>();
 let installed = false;
 
 export function track(pgid: number): void {
-  live.add(pgid);
-  install();
+	live.add(pgid);
+	install();
 }
 
 export function untrack(pgid: number): void {
-  live.delete(pgid);
+	live.delete(pgid);
 }
 
 /** TERM every tracked group, then KILL after a grace period. */
 export function reapAll(grace = 3000): void {
-  for (const pgid of live) signalGroup(pgid, "SIGTERM");
-  if (live.size === 0) return;
-  const timer = setTimeout(() => {
-    for (const pgid of live) signalGroup(pgid, "SIGKILL");
-    live.clear();
-  }, grace);
-  // Do not hold the event loop open just to escalate.
-  timer.unref?.();
+	for (const pgid of live) signalGroup(pgid, "SIGTERM");
+	if (live.size === 0) return;
+	const timer = setTimeout(() => {
+		for (const pgid of live) signalGroup(pgid, "SIGKILL");
+		live.clear();
+	}, grace);
+	// Do not hold the event loop open just to escalate.
+	timer.unref?.();
 }
 
 /** Synchronous best-effort kill, for exit paths that cannot await. */
 export function reapAllNow(): void {
-  for (const pgid of live) signalGroup(pgid, "SIGKILL");
-  live.clear();
+	for (const pgid of live) signalGroup(pgid, "SIGKILL");
+	live.clear();
 }
 
 function install(): void {
-  if (installed) return;
-  installed = true;
-  for (const sig of ["SIGTERM", "SIGINT"] as const) {
-    process.once(sig, () => {
-      reapAll();
-    });
-  }
-  process.once("exit", reapAllNow);
-  process.once("uncaughtException", (e) => {
-    reapAllNow();
-    throw e;
-  });
+	if (installed) return;
+	installed = true;
+	for (const sig of ["SIGTERM", "SIGINT"] as const) {
+		process.once(sig, () => {
+			reapAll();
+		});
+	}
+	process.once("exit", reapAllNow);
+	process.once("uncaughtException", (e) => {
+		reapAllNow();
+		throw e;
+	});
 }

@@ -1,9 +1,4 @@
-import {
-  CLASS_ORDER,
-  CLASS_LABELS,
-  SIGNS,
-  userFor,
-} from "#core/permutations";
+import { CLASS_LABELS, CLASS_ORDER, SIGNS, userFor } from "#core/permutations";
 import type { RunState } from "#core/state";
 import { PermutationCell } from "./PermutationCell.tsx";
 
@@ -16,42 +11,42 @@ import { PermutationCell } from "./PermutationCell.tsx";
  * on a web page.
  */
 export function ProgressGrid({ state }: { state: RunState }) {
-  return (
-    <div className="grid-wrap">
-      <table className="grid">
-        <thead>
-          <tr>
-            <th scope="col">
-              <span className="sr-only">Class</span>
-            </th>
-            {SIGNS.map((sign) => (
-              <th key={sign} scope="col" title={sign}>
-                {sign.slice(0, 3)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {CLASS_ORDER.map((abbr) => (
-            <tr key={abbr}>
-              <th scope="row">{CLASS_LABELS[abbr]}</th>
-              {SIGNS.map((sign) => {
-                const user = userFor(abbr, sign);
-                const perm = state.perms[user];
-                return (
-                  <td key={sign}>
-                    {perm ? (
-                      <PermutationCell perm={perm} />
-                    ) : (
-                      <div className="cell cell-idle" />
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+	return (
+		<div className="grid-wrap">
+			<table className="grid">
+				<thead>
+					<tr>
+						<th scope="col">
+							<span className="sr-only">Class</span>
+						</th>
+						{SIGNS.map((sign) => (
+							<th key={sign} scope="col" title={sign}>
+								{sign.slice(0, 3)}
+							</th>
+						))}
+					</tr>
+				</thead>
+				<tbody>
+					{CLASS_ORDER.map((abbr) => (
+						<tr key={abbr}>
+							<th scope="row">{CLASS_LABELS[abbr]}</th>
+							{SIGNS.map((sign) => {
+								const user = userFor(abbr, sign);
+								const perm = state.perms[user];
+								return (
+									<td key={sign}>
+										{perm ? (
+											<PermutationCell perm={perm} />
+										) : (
+											<div className="cell cell-idle" />
+										)}
+									</td>
+								);
+							})}
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+	);
 }

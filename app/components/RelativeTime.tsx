@@ -1,5 +1,5 @@
-import { formatAbsolute, formatRelative } from "../lib/format.ts";
 import { useServerClock } from "../hooks/useServerClock.ts";
+import { formatAbsolute, formatRelative } from "../lib/format.ts";
 import { useServerNowIso } from "../lib/server-now.ts";
 
 /**
@@ -11,12 +11,12 @@ import { useServerNowIso } from "../lib/server-now.ts";
  * legitimately differ by a tick between server and client.
  */
 export function RelativeTime({ iso }: { iso: string }) {
-  const serverNowIso = useServerNowIso();
-  const ticking = useServerClock(serverNowIso, 30_000);
-  const now = ticking ?? Date.parse(serverNowIso);
-  return (
-    <time dateTime={iso} title={formatAbsolute(iso)}>
-      {formatRelative(iso, now)}
-    </time>
-  );
+	const serverNowIso = useServerNowIso();
+	const ticking = useServerClock(serverNowIso, 30_000);
+	const now = ticking ?? Date.parse(serverNowIso);
+	return (
+		<time dateTime={iso} title={formatAbsolute(iso)}>
+			{formatRelative(iso, now)}
+		</time>
+	);
 }

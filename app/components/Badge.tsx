@@ -3,15 +3,15 @@
  * undesigned, and "(older data)" reads fine inline.
  */
 export function Badge({
-  children,
-  title,
+	children,
+	title,
 }: {
-  children: React.ReactNode;
-  title?: string;
+	children: React.ReactNode;
+	title?: string;
 }) {
-  return (
-    <span className="muted small" title={title}>
-      ({children})
-    </span>
-  );
+	return (
+		<span className="muted small" title={title}>
+			({children})
+		</span>
+	);
 }

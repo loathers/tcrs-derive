@@ -23,22 +23,22 @@
 import { useEffect, useState } from "react";
 
 export function useServerClock(
-  serverNowIso: string,
-  intervalMs: number,
+	serverNowIso: string,
+	intervalMs: number,
 ): number | null {
-  const [now, setNow] = useState<number | null>(null);
+	const [now, setNow] = useState<number | null>(null);
 
-  useEffect(() => {
-    // Sampled once, on mount, rather than per tick: the two clocks drift apart far
-    // too slowly to matter over one page view, and re-measuring would make every
-    // tick depend on how long the render took.
-    const serverNow = Date.parse(serverNowIso);
-    const skew = Number.isFinite(serverNow) ? serverNow - Date.now() : 0;
-    const tick = () => setNow(Date.now() + skew);
-    tick();
-    const timer = setInterval(tick, intervalMs);
-    return () => clearInterval(timer);
-  }, [serverNowIso, intervalMs]);
+	useEffect(() => {
+		// Sampled once, on mount, rather than per tick: the two clocks drift apart far
+		// too slowly to matter over one page view, and re-measuring would make every
+		// tick depend on how long the render took.
+		const serverNow = Date.parse(serverNowIso);
+		const skew = Number.isFinite(serverNow) ? serverNow - Date.now() : 0;
+		const tick = () => setNow(Date.now() + skew);
+		tick();
+		const timer = setInterval(tick, intervalMs);
+		return () => clearInterval(timer);
+	}, [serverNowIso, intervalMs]);
 
-  return now;
+	return now;
 }

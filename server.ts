@@ -16,13 +16,13 @@ import { createRequestHandler } from "@react-router/express";
 import express from "express";
 import { isDev } from "#server/dev.server";
 import {
-  initServer,
-  mountApiRoutes,
-  shutdownServer,
+	initServer,
+	mountApiRoutes,
+	shutdownServer,
 } from "#server/express-routes.server";
 
-const PORT = Number(process.env["PORT"] ?? 3000);
-const HOST = process.env["HOST"] ?? "0.0.0.0";
+const PORT = Number(process.env.PORT ?? 3000);
+const HOST = process.env.HOST ?? "0.0.0.0";
 const DEV = isDev();
 
 // Boot recovery must complete before anything is served.
@@ -33,41 +33,40 @@ app.disable("x-powered-by");
 
 // In dev, Vite runs in middleware mode so HMR works.
 const vite = DEV
-  ? await import("vite").then((v) =>
-      v.createServer({ server: { middlewareMode: true } }),
-    )
-  : null;
+	? await import("vite").then((v) =>
+			v.createServer({ server: { middlewareMode: true } }),
+		)
+	: null;
 
 // Mounted BEFORE the React Router handler, so RR never sees them.
 mountApiRoutes(app);
 
 if (vite) {
-  app.use(vite.middlewares);
+	app.use(vite.middlewares);
 } else {
-  // Vite-hashed assets are immutable; everything else in client/ is not.
-  app.use(
-    "/assets",
-    express.static("build/client/assets", { immutable: true, maxAge: "1y" }),
-  );
-  app.use(express.static("build/client", { maxAge: "1h" }));
+	// Vite-hashed assets are immutable; everything else in client/ is not.
+	app.use(
+		"/assets",
+		express.static("build/client/assets", { immutable: true, maxAge: "1y" }),
+	);
+	app.use(express.static("build/client", { maxAge: "1h" }));
 }
 
 app.all(
-  "*splat",
-  createRequestHandler({
-    build: vite
-      ? () =>
-          vite.ssrLoadModule("virtual:react-router/server-build") as Promise<
-            Parameters<typeof createRequestHandler>[0]["build"]
-          >
-      : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore - built at deploy time by `react-router build`
-        await import("./build/server/index.js"),
-  }),
+	"*splat",
+	createRequestHandler({
+		build: vite
+			? () =>
+					vite.ssrLoadModule("virtual:react-router/server-build") as Promise<
+						Parameters<typeof createRequestHandler>[0]["build"]
+					>
+			: // @ts-expect-error - built at deploy time by `react-router build`
+				await import("./build/server/index.js"),
+	}),
 );
 
 const server = app.listen(PORT, HOST, () => {
-  process.stdout.write(`tcrs listening on http://${HOST}:${PORT}\n`);
+	process.stdout.write(`tcrs listening on http://${HOST}:${PORT}\n`);
 });
 
 // --- Graceful shutdown -------------------------------------------------------
@@ -76,13 +75,15 @@ const server = app.listen(PORT, HOST, () => {
 // boot recovery covers the SIGKILL case regardless.
 let shuttingDown = false;
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
-  process.on(signal, () => {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    process.stdout.write(`\n${signal} received; shutting down...\n`);
-    server.close();
-    shutdownServer()
-      .catch((e: unknown) => process.stderr.write(`shutdown error: ${String(e)}\n`))
-      .finally(() => process.exit(0));
-  });
+	process.on(signal, () => {
+		if (shuttingDown) return;
+		shuttingDown = true;
+		process.stdout.write(`\n${signal} received; shutting down...\n`);
+		server.close();
+		shutdownServer()
+			.catch((e: unknown) =>
+				process.stderr.write(`shutdown error: ${String(e)}\n`),
+			)
+			.finally(() => process.exit(0));
+	});
 }

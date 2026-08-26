@@ -23,8 +23,8 @@
  * is race-free regardless of which liveness rule applies.
  */
 
-import { hostname } from "node:os";
 import { open, readFile, rm, stat, utimes } from "node:fs/promises";
+import { hostname } from "node:os";
 
 /** How often a holder proves it is still alive. */
 export const HEARTBEAT_MS = 15_000;
@@ -32,130 +32,131 @@ export const HEARTBEAT_MS = 15_000;
 export const STALE_MS = 60_000;
 
 export interface Lock {
-  readonly path: string;
-  release(): Promise<void>;
+	readonly path: string;
+	release(): Promise<void>;
 }
 
 export class LockHeldError extends Error {
-  readonly path: string;
-  readonly holder: string;
-  constructor(path: string, holder: string) {
-    super(`Another instance holds ${path} (${holder})`);
-    this.name = "LockHeldError";
-    this.path = path;
-    this.holder = holder;
-  }
+	readonly path: string;
+	readonly holder: string;
+	constructor(path: string, holder: string) {
+		super(`Another instance holds ${path} (${holder})`);
+		this.name = "LockHeldError";
+		this.path = path;
+		this.holder = holder;
+	}
 }
 
 export interface AcquireOptions {
-  /** Injectable for tests. */
-  now?: () => number;
-  host?: string;
-  staleMs?: number;
-  heartbeatMs?: number;
+	/** Injectable for tests. */
+	now?: () => number;
+	host?: string;
+	staleMs?: number;
+	heartbeatMs?: number;
 }
 
 export async function acquireLock(
-  path: string,
-  o: AcquireOptions = {},
+	path: string,
+	o: AcquireOptions = {},
 ): Promise<Lock> {
-  const host = o.host ?? hostname();
-  const staleMs = o.staleMs ?? STALE_MS;
-  const heartbeatMs = o.heartbeatMs ?? HEARTBEAT_MS;
-  const now = o.now ?? Date.now;
+	const host = o.host ?? hostname();
+	const staleMs = o.staleMs ?? STALE_MS;
+	const heartbeatMs = o.heartbeatMs ?? HEARTBEAT_MS;
+	const now = o.now ?? Date.now;
 
-  try {
-    return await create(path, host, heartbeatMs);
-  } catch (e) {
-    if (!isEexist(e)) throw e;
-  }
+	try {
+		return await create(path, host, heartbeatMs);
+	} catch (e) {
+		if (!isEexist(e)) throw e;
+	}
 
-  // Occupied. Decide whether the holder is still alive.
-  const raw = (await readFile(path, "utf8").catch(() => "")).trim();
-  const [holderHost = "", holderPid = ""] = raw.split(/\s+/);
-  const describe = raw === "" ? "unknown holder" : raw;
+	// Occupied. Decide whether the holder is still alive.
+	const raw = (await readFile(path, "utf8").catch(() => "")).trim();
+	const [holderHost = "", holderPid = ""] = raw.split(/\s+/);
+	const describe = raw === "" ? "unknown holder" : raw;
 
-  if (holderHost === host) {
-    // Same machine (or the same container): the pid is directly comparable.
-    const pid = Number(holderPid);
-    if (Number.isFinite(pid) && pid > 0 && isAlive(pid)) {
-      throw new LockHeldError(path, describe);
-    }
-  } else {
-    // Different host or PID namespace: fall back to the heartbeat.
-    const age = await ageOf(path, now);
-    if (age !== null && age < staleMs) {
-      throw new LockHeldError(
-        path,
-        `${describe}; last heartbeat ${Math.round(age / 1000)}s ago`,
-      );
-    }
-  }
+	if (holderHost === host) {
+		// Same machine (or the same container): the pid is directly comparable.
+		const pid = Number(holderPid);
+		if (Number.isFinite(pid) && pid > 0 && isAlive(pid)) {
+			throw new LockHeldError(path, describe);
+		}
+	} else {
+		// Different host or PID namespace: fall back to the heartbeat.
+		const age = await ageOf(path, now);
+		if (age !== null && age < staleMs) {
+			throw new LockHeldError(
+				path,
+				`${describe}; last heartbeat ${Math.round(age / 1000)}s ago`,
+			);
+		}
+	}
 
-  // Stale. Remove and retry once. If someone else wins that race, their create
-  // succeeds and ours throws LockHeldError rather than double-acquiring.
-  await rm(path, { force: true });
-  try {
-    return await create(path, host, heartbeatMs);
-  } catch (e) {
-    if (isEexist(e)) throw new LockHeldError(path, "raced with another process");
-    throw e;
-  }
+	// Stale. Remove and retry once. If someone else wins that race, their create
+	// succeeds and ours throws LockHeldError rather than double-acquiring.
+	await rm(path, { force: true });
+	try {
+		return await create(path, host, heartbeatMs);
+	} catch (e) {
+		if (isEexist(e))
+			throw new LockHeldError(path, "raced with another process");
+		throw e;
+	}
 }
 
 async function create(
-  path: string,
-  host: string,
-  heartbeatMs: number,
+	path: string,
+	host: string,
+	heartbeatMs: number,
 ): Promise<Lock> {
-  const handle = await open(path, "wx");
-  try {
-    await handle.writeFile(
-      `${host} ${process.pid} ${new Date().toISOString()}\n`,
-    );
-  } finally {
-    await handle.close();
-  }
+	const handle = await open(path, "wx");
+	try {
+		await handle.writeFile(
+			`${host} ${process.pid} ${new Date().toISOString()}\n`,
+		);
+	} finally {
+		await handle.close();
+	}
 
-  // Prove liveness to any other host sharing this volume. unref'd, so holding the
-  // lock never keeps the process alive on its own.
-  const beat = setInterval(() => {
-    const t = new Date();
-    void utimes(path, t, t).catch(() => {});
-  }, heartbeatMs);
-  beat.unref?.();
+	// Prove liveness to any other host sharing this volume. unref'd, so holding the
+	// lock never keeps the process alive on its own.
+	const beat = setInterval(() => {
+		const t = new Date();
+		void utimes(path, t, t).catch(() => {});
+	}, heartbeatMs);
+	beat.unref?.();
 
-  let released = false;
-  return {
-    path,
-    async release() {
-      if (released) return;
-      released = true;
-      clearInterval(beat);
-      await rm(path, { force: true });
-    },
-  };
+	let released = false;
+	return {
+		path,
+		async release() {
+			if (released) return;
+			released = true;
+			clearInterval(beat);
+			await rm(path, { force: true });
+		},
+	};
 }
 
 async function ageOf(path: string, now: () => number): Promise<number | null> {
-  try {
-    const st = await stat(path);
-    return Math.max(0, now() - st.mtimeMs);
-  } catch {
-    return null;
-  }
+	try {
+		const st = await stat(path);
+		return Math.max(0, now() - st.mtimeMs);
+	} catch {
+		return null;
+	}
 }
 
 function isAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (e) {
-    // EPERM means it exists but belongs to someone else, still alive.
-    return (e as NodeJS.ErrnoException).code === "EPERM";
-  }
+	try {
+		process.kill(pid, 0);
+		return true;
+	} catch (e) {
+		// EPERM means it exists but belongs to someone else, still alive.
+		return (e as NodeJS.ErrnoException).code === "EPERM";
+	}
 }
 
 function isEexist(e: unknown): boolean {
-  return (e as NodeJS.ErrnoException)?.code === "EEXIST";
+	return (e as NodeJS.ErrnoException)?.code === "EEXIST";
 }

@@ -13,30 +13,31 @@ import type { PermState } from "#core/state";
  * reading 99% is the inconsistency that separation is here to avoid.
  */
 export const PermutationCell = memo(function PermutationCell({
-  perm,
+	perm,
 }: {
-  perm: PermState;
+	perm: PermState;
 }) {
-  const view = rowView(perm);
-  const pct = progressPercent(perm);
-  const label = `${perm.classLabel} / ${perm.signCap}: ${view.status}`;
+	const view = rowView(perm);
+	const pct = progressPercent(perm);
+	const label = `${perm.classLabel} / ${perm.signCap}: ${view.status}`;
 
-  return (
-    <div
-      className={`cell cell-${view.tone}`}
-      title={label}
-      aria-label={label}
-      style={
-        view.tone === "active"
-          ? {
-              backgroundImage: `linear-gradient(to right, var(--fill) ${pct}%, transparent ${pct}%)`,
-            }
-          : undefined
-      }
-    >
-      {cellLabel(perm)}
-    </div>
-  );
+	return (
+		<div
+			className={`cell cell-${view.tone}`}
+			role="img"
+			title={label}
+			aria-label={label}
+			style={
+				view.tone === "active"
+					? {
+							backgroundImage: `linear-gradient(to right, var(--fill) ${pct}%, transparent ${pct}%)`,
+						}
+					: undefined
+			}
+		>
+			{cellLabel(perm)}
+		</div>
+	);
 });
 
 /*

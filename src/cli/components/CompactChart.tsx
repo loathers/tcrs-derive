@@ -7,26 +7,26 @@
  */
 import { Box } from "ink";
 import { orderedPerms, type RunState } from "#core/state";
-import { PermutationRow } from "./PermutationRow.tsx";
 import { OverallSummary } from "./OverallSummary.tsx";
+import { PermutationRow } from "./PermutationRow.tsx";
 
 const RUNNING = new Set(["login", "stalled", "deriving", "retrying"]);
 
 export function CompactChart({
-  state,
-  rows,
+	state,
+	rows,
 }: {
-  state: RunState;
-  rows: number;
+	state: RunState;
+	rows: number;
 }) {
-  const running = orderedPerms(state).filter((p) => RUNNING.has(p.status.kind));
-  const room = Math.max(1, rows - 1);
-  return (
-    <Box flexDirection="column">
-      <OverallSummary summary={state.summary} suffix="  [running only]" />
-      {running.slice(0, room).map((p) => (
-        <PermutationRow key={p.user} perm={p} />
-      ))}
-    </Box>
-  );
+	const running = orderedPerms(state).filter((p) => RUNNING.has(p.status.kind));
+	const room = Math.max(1, rows - 1);
+	return (
+		<Box flexDirection="column">
+			<OverallSummary summary={state.summary} suffix="  [running only]" />
+			{running.slice(0, room).map((p) => (
+				<PermutationRow key={p.user} perm={p} />
+			))}
+		</Box>
+	);
 }

@@ -19,46 +19,46 @@ import { join } from "node:path";
 // archiver v8 exports classes rather than a callable factory.
 import { ZipArchive } from "archiver";
 import {
-  SUMS_NAME,
-  ZIP_NAME,
-  sha256File,
-  type ManifestEntry,
-  type Staging,
+	type ManifestEntry,
+	type Staging,
+	SUMS_NAME,
+	sha256File,
+	ZIP_NAME,
 } from "./staging.server.ts";
 
 export async function buildZip(
-  staging: Staging,
-  entries: readonly ManifestEntry[],
+	staging: Staging,
+	entries: readonly ManifestEntry[],
 ): Promise<{ name: string; bytes: number; sha256: string } | null> {
-  if (entries.length === 0) return null;
+	if (entries.length === 0) return null;
 
-  const finalPath = join(staging.dir, ZIP_NAME);
-  const tmpPath = `${finalPath}.part`;
+	const finalPath = join(staging.dir, ZIP_NAME);
+	const tmpPath = `${finalPath}.part`;
 
-  await new Promise<void>((resolve, reject) => {
-    const out = createWriteStream(tmpPath);
-    const archive = new ZipArchive({ zlib: { level: 6 } });
+	await new Promise<void>((resolve, reject) => {
+		const out = createWriteStream(tmpPath);
+		const archive = new ZipArchive({ zlib: { level: 6 } });
 
-    out.on("close", () => resolve());
-    out.on("error", reject);
-    archive.on("error", reject);
-    // A warning (e.g. a vanished file) must not silently truncate the archive.
-    archive.on("warning", reject);
+		out.on("close", () => resolve());
+		out.on("error", reject);
+		archive.on("error", reject);
+		// A warning (e.g. a vanished file) must not silently truncate the archive.
+		archive.on("warning", reject);
 
-    archive.pipe(out);
-    for (const e of entries) {
-      archive.file(join(staging.dataDir, e.name), { name: e.name });
-    }
-    // Ship the checksums inside the zip too, so an offline consumer can verify.
-    archive.file(join(staging.dataDir, SUMS_NAME), { name: SUMS_NAME });
-    void archive.finalize();
-  });
+		archive.pipe(out);
+		for (const e of entries) {
+			archive.file(join(staging.dataDir, e.name), { name: e.name });
+		}
+		// Ship the checksums inside the zip too, so an offline consumer can verify.
+		archive.file(join(staging.dataDir, SUMS_NAME), { name: SUMS_NAME });
+		void archive.finalize();
+	});
 
-  await rename(tmpPath, finalPath);
-  const st = await stat(finalPath);
-  return {
-    name: ZIP_NAME,
-    bytes: st.size,
-    sha256: await sha256File(finalPath),
-  };
+	await rename(tmpPath, finalPath);
+	const st = await stat(finalPath);
+	return {
+		name: ZIP_NAME,
+		bytes: st.size,
+		sha256: await sha256File(finalPath),
+	};
 }
